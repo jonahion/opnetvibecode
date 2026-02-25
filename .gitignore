@@ -137,3 +137,7 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Deployment secrets
+deploy/.env
+deploy/deployment.json

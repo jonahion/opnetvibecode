@@ -1,0 +1,24 @@
+{
+    "name": "opnet-deploy",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "Deployment script for OPNet prediction market contract",
+    "scripts": {
+        "deploy": "tsx deploy.ts",
+        "generate-wallet": "tsx generate-wallet.ts"
+    },
+    "dependencies": {
+        "@btc-vision/bitcoin": "7.0.0-rc.6",
+        "@btc-vision/transaction": "1.8.0-rc.9",
+        "opnet": "1.8.1-rc.14"
+    },
+    "devDependencies": {
+        "tsx": "^4.19.0",
+        "typescript": "^5.8.3"
+    },
+    "overrides": {
+        "bip39": {
+            "@noble/hashes": "1.8.0"
+        }
+    }
+}
