@@ -1,0 +1,28 @@
+{
+    "name": "opnet-prediction-market",
+    "version": "1.0.0",
+    "description": "Bitcoin Prediction Market smart contract for OPNet",
+    "scripts": {
+        "build": "asc src/index.ts --config asconfig.json --target debug",
+        "clean": "rm -rf build/*",
+        "lint": "eslint . --ext .ts",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@btc-vision/as-bignum": "^0.1.2",
+        "@btc-vision/btc-runtime": "^1.11.0-rc.10"
+    },
+    "devDependencies": {
+        "@assemblyscript/loader": "^0.28.9",
+        "@btc-vision/assemblyscript": "^0.29.2",
+        "@btc-vision/opnet-transform": "^1.2.0",
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.0.2",
+        "typescript-eslint": "^8.56.1"
+    },
+    "overrides": {
+        "bip39": {
+            "@noble/hashes": "1.8.0"
+        }
+    }
+}

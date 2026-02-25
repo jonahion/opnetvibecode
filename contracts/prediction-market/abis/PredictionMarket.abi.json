@@ -1,0 +1,268 @@
+{
+    "functions": [
+        {
+            "name": "createMarket",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "question",
+                    "type": "STRING"
+                },
+                {
+                    "name": "endBlock",
+                    "type": "UINT64"
+                },
+                {
+                    "name": "oracle",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "placeBet",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "outcome",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "resolveMarket",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "outcome",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "success",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "claimWinnings",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "getMarket",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "creator",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "endBlock",
+                    "type": "UINT64"
+                },
+                {
+                    "name": "oracle",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "status",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "outcome",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "yesPool",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "noPool",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "getUserPosition",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "user",
+                    "type": "ADDRESS"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "yesBet",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "noBet",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "claimed",
+                    "type": "BOOL"
+                }
+            ]
+        },
+        {
+            "name": "getMarketCountView",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "count",
+                    "type": "UINT256"
+                }
+            ]
+        },
+        {
+            "name": "getOwnerView",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "owner",
+                    "type": "UINT256"
+                }
+            ]
+        }
+    ],
+    "events": [
+        {
+            "name": "MarketCreated",
+            "values": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "creator",
+                    "type": "ADDRESS"
+                },
+                {
+                    "name": "endBlock",
+                    "type": "UINT64"
+                }
+            ],
+            "type": "Event"
+        },
+        {
+            "name": "BetPlaced",
+            "values": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "bettor",
+                    "type": "ADDRESS"
+                },
+                {
+                    "name": "outcome",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "type": "Event"
+        },
+        {
+            "name": "MarketResolved",
+            "values": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "outcome",
+                    "type": "UINT256"
+                }
+            ],
+            "type": "Event"
+        },
+        {
+            "name": "WinningsClaimed",
+            "values": [
+                {
+                    "name": "marketId",
+                    "type": "UINT256"
+                },
+                {
+                    "name": "claimant",
+                    "type": "ADDRESS"
+                },
+                {
+                    "name": "amount",
+                    "type": "UINT256"
+                }
+            ],
+            "type": "Event"
+        }
+    ]
+}
