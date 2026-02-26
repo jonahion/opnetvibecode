@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { WalletButton } from './components/wallet/WalletButton';
 import { MarketList } from './components/market/MarketList';
 import { MarketDetail } from './components/market/MarketDetail';
 import { CreateMarketForm } from './components/market/CreateMarketForm';
 import { AnalyticsPage } from './components/analytics/AnalyticsPage';
+import { bootMarketQuestions } from './utils/marketQuestions';
 
 function NavLink({ to, label }: { to: string; label: string }): React.JSX.Element {
     const location = useLocation();
@@ -22,6 +24,8 @@ function NavLink({ to, label }: { to: string; label: string }): React.JSX.Elemen
 }
 
 export function App(): React.JSX.Element {
+    useEffect(() => { void bootMarketQuestions(); }, []);
+
     return (
         <div className="min-h-screen">
             <header className="border-b border-[#2a2a3a] bg-[#0a0a0f]/80 backdrop-blur-sm sticky top-0 z-50">

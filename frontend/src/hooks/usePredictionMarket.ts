@@ -124,15 +124,15 @@ export function usePredictionMarket(): {
                 network,
             });
 
-            // Save question to localStorage for display
+            // Save question to Supabase for display
             const marketId = sim.properties?.marketId as bigint | undefined;
             if (marketId) {
-                saveMarketQuestion(marketId, question);
+                void saveMarketQuestion(marketId, question);
             } else {
                 // Fallback: save for next market count
                 try {
                     const count = await fetchMarketCount();
-                    saveMarketQuestion(count, question);
+                    void saveMarketQuestion(count, question);
                 } catch {
                     // best-effort
                 }

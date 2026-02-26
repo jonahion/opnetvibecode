@@ -1,54 +1,83 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { usePredictionMarket } from './usePredictionMarket';
 import { MarketData, MarketStatus, MarketOutcome } from '../types';
+import { supabase } from '../services/supabase';
 
-const CACHE_KEY = 'oprophet_analytics_cache';
 const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
 
-interface CacheEntry {
-    timestamp: number;
-    // bigints serialized as strings
-    markets: Array<Omit<MarketData, 'id' | 'endBlock' | 'yesPool' | 'noPool'> & {
-        id: string; endBlock: string; yesPool: string; noPool: string;
-    }>;
+interface SerializedMarket {
+    id: string;
+    endBlock: string;
+    yesPool: string;
+    noPool: string;
+    question: string;
+    creator: string;
+    oracle: string;
+    status: number;
+    outcome: number;
 }
 
-function loadCache(): MarketData[] | null {
+function serializeMarkets(markets: MarketData[]): SerializedMarket[] {
+    return markets.map((m) => ({
+        id: m.id.toString(),
+        endBlock: m.endBlock.toString(),
+        yesPool: m.yesPool.toString(),
+        noPool: m.noPool.toString(),
+        question: m.question,
+        creator: m.creator,
+        oracle: m.oracle,
+        status: m.status,
+        outcome: m.outcome,
+    }));
+}
+
+function deserializeMarkets(rows: SerializedMarket[]): MarketData[] {
+    return rows.map((m) => ({
+        id: BigInt(m.id),
+        endBlock: BigInt(m.endBlock),
+        yesPool: BigInt(m.yesPool),
+        noPool: BigInt(m.noPool),
+        question: m.question,
+        creator: m.creator,
+        oracle: m.oracle,
+        status: m.status as MarketStatus,
+        outcome: m.outcome as MarketOutcome,
+    }));
+}
+
+async function loadCache(): Promise<{ markets: MarketData[]; timestamp: number } | null> {
     try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (!raw) return null;
-        const entry = JSON.parse(raw) as CacheEntry;
-        if (Date.now() - entry.timestamp > CACHE_TTL) {
-            localStorage.removeItem(CACHE_KEY);
-            return null;
-        }
-        return entry.markets.map((m) => ({
-            ...m,
-            id: BigInt(m.id),
-            endBlock: BigInt(m.endBlock),
-            yesPool: BigInt(m.yesPool),
-            noPool: BigInt(m.noPool),
-        }));
+        const { data } = await supabase
+            .from('analytics_cache')
+            .select('updated_at, markets')
+            .eq('id', 1)
+            .single();
+
+        if (!data || !data.markets || (data.markets as SerializedMarket[]).length === 0) return null;
+
+        const updatedAt = new Date(data.updated_at as string).getTime();
+        if (Date.now() - updatedAt > CACHE_TTL) return null;
+
+        return {
+            markets: deserializeMarkets(data.markets as SerializedMarket[]),
+            timestamp: updatedAt,
+        };
     } catch {
         return null;
     }
 }
 
-function saveCache(markets: MarketData[]): void {
+async function saveCache(markets: MarketData[]): Promise<void> {
     try {
-        const entry: CacheEntry = {
-            timestamp: Date.now(),
-            markets: markets.map((m) => ({
-                ...m,
-                id: m.id.toString(),
-                endBlock: m.endBlock.toString(),
-                yesPool: m.yesPool.toString(),
-                noPool: m.noPool.toString(),
-            })),
-        };
-        localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+        await supabase
+            .from('analytics_cache')
+            .update({
+                updated_at: new Date().toISOString(),
+                markets: serializeMarkets(markets) as unknown as Record<string, unknown>[],
+            })
+            .eq('id', 1);
     } catch {
-        // quota exceeded or other error
+        // best-effort
     }
 }
 
@@ -104,13 +133,25 @@ export function useAnalytics(): {
     refresh: (force?: boolean) => Promise<void>;
 } {
     const { fetchMarketCount, fetchMarket } = usePredictionMarket();
-    const [rawMarkets, setRawMarkets] = useState<MarketData[]>(() => loadCache() ?? []);
+    const [rawMarkets, setRawMarkets] = useState<MarketData[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const lastFetch = useRef(0);
+    const cacheLoaded = useRef(false);
+
+    // Load cache from Supabase on mount
+    useEffect(() => {
+        if (cacheLoaded.current) return;
+        cacheLoaded.current = true;
+        void loadCache().then((cached) => {
+            if (cached) {
+                setRawMarkets(cached.markets);
+                lastFetch.current = cached.timestamp;
+            }
+        });
+    }, []);
 
     const refresh = useCallback(async (force = false): Promise<void> => {
-        // Skip if recently fetched (within cache TTL) unless forced
         if (!force && Date.now() - lastFetch.current < CACHE_TTL && rawMarkets.length > 0) {
             return;
         }
@@ -127,8 +168,8 @@ export function useAnalytics(): {
                 }
             }
             setRawMarkets(markets);
-            saveCache(markets);
             lastFetch.current = Date.now();
+            void saveCache(markets);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load analytics');
         } finally {
