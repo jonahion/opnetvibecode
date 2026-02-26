@@ -173,7 +173,7 @@ export class PredictionMarket extends OP_NET {
         this._marketCount.value = marketId;
 
         const creator: Address = Blockchain.tx.sender;
-        const marketIdBytes: Uint8Array = marketId.toUint8Array(true);
+        const marketIdBytes: Uint8Array = this.toSubPointer(marketId);
 
         this.getMarketStore(this.marketCreatorPointer, marketIdBytes).value = u256.fromUint8ArrayBE(creator);
         this.setMarketEndBlock(marketIdBytes, endBlock);
@@ -206,7 +206,7 @@ export class PredictionMarket extends OP_NET {
             throw new Revert('Invalid outcome: must be 1 (YES) or 2 (NO)');
         }
 
-        const marketIdBytes: Uint8Array = marketId.toUint8Array(true);
+        const marketIdBytes: Uint8Array = this.toSubPointer(marketId);
 
         const status: u256 = this.getMarketStore(this.marketStatusPointer, marketIdBytes).value;
         if (!u256.eq(status, STATUS_OPEN)) {
@@ -257,7 +257,7 @@ export class PredictionMarket extends OP_NET {
             throw new Revert('Invalid outcome: must be 1 (YES) or 2 (NO)');
         }
 
-        const marketIdBytes: Uint8Array = marketId.toUint8Array(true);
+        const marketIdBytes: Uint8Array = this.toSubPointer(marketId);
 
         const status: u256 = this.getMarketStore(this.marketStatusPointer, marketIdBytes).value;
         if (!u256.eq(status, STATUS_OPEN)) {
@@ -290,7 +290,7 @@ export class PredictionMarket extends OP_NET {
     @emit('WinningsClaimed')
     public claimWinnings(calldata: Calldata): BytesWriter {
         const marketId: u256 = calldata.readU256();
-        const marketIdBytes: Uint8Array = marketId.toUint8Array(true);
+        const marketIdBytes: Uint8Array = this.toSubPointer(marketId);
 
         const status: u256 = this.getMarketStore(this.marketStatusPointer, marketIdBytes).value;
         if (!u256.eq(status, STATUS_RESOLVED)) {
@@ -347,7 +347,7 @@ export class PredictionMarket extends OP_NET {
     )
     public getMarket(calldata: Calldata): BytesWriter {
         const marketId: u256 = calldata.readU256();
-        const marketIdBytes: Uint8Array = marketId.toUint8Array(true);
+        const marketIdBytes: Uint8Array = this.toSubPointer(marketId);
 
         const creator: u256 = this.getMarketStore(this.marketCreatorPointer, marketIdBytes).value;
         const endBlock: u64 = this.getMarketEndBlock(marketIdBytes);
@@ -380,7 +380,7 @@ export class PredictionMarket extends OP_NET {
     public getUserPosition(calldata: Calldata): BytesWriter {
         const marketId: u256 = calldata.readU256();
         const user: Address = calldata.readAddress();
-        const marketIdBytes: Uint8Array = marketId.toUint8Array(true);
+        const marketIdBytes: Uint8Array = this.toSubPointer(marketId);
 
         const yesBet: u256 = this.getUserBet(this.userYesBetsPointer, marketIdBytes, user);
         const noBet: u256 = this.getUserBet(this.userNoBetsPointer, marketIdBytes, user);
@@ -409,33 +409,42 @@ export class PredictionMarket extends OP_NET {
         return writer;
     }
 
-    private getMarketStore(basePointer: u16, marketIdBytes: Uint8Array): StoredU256 {
-        return new StoredU256(basePointer, marketIdBytes);
+    private toSubPointer(marketId: u256): Uint8Array {
+        const full: Uint8Array = marketId.toUint8Array(true);
+        const sub: Uint8Array = new Uint8Array(30);
+        for (let i: i32 = 0; i < 30; i++) {
+            sub[i] = full[i + 2];
+        }
+        return sub;
     }
 
-    private getMarketEndBlock(marketIdBytes: Uint8Array): u64 {
-        const stored: StoredU64 = new StoredU64(this.marketEndBlockPointer, marketIdBytes);
+    private getMarketStore(basePointer: u16, subPointer: Uint8Array): StoredU256 {
+        return new StoredU256(basePointer, subPointer);
+    }
+
+    private getMarketEndBlock(subPointer: Uint8Array): u64 {
+        const stored: StoredU64 = new StoredU64(this.marketEndBlockPointer, subPointer);
         return stored.get(0);
     }
 
-    private setMarketEndBlock(marketIdBytes: Uint8Array, endBlock: u64): void {
-        const stored: StoredU64 = new StoredU64(this.marketEndBlockPointer, marketIdBytes);
+    private setMarketEndBlock(subPointer: Uint8Array, endBlock: u64): void {
+        const stored: StoredU64 = new StoredU64(this.marketEndBlockPointer, subPointer);
         stored.set(0, endBlock);
         stored.save();
     }
 
-    private getUserBet(basePointer: u16, marketIdBytes: Uint8Array, user: Address): u256 {
-        const map: StoredMapU256 = new StoredMapU256(basePointer, marketIdBytes);
+    private getUserBet(basePointer: u16, subPointer: Uint8Array, user: Address): u256 {
+        const map: StoredMapU256 = new StoredMapU256(basePointer, subPointer);
         return map.get(u256.fromUint8ArrayBE(user));
     }
 
-    private setUserBet(basePointer: u16, marketIdBytes: Uint8Array, user: Address, val: u256): void {
-        const map: StoredMapU256 = new StoredMapU256(basePointer, marketIdBytes);
+    private setUserBet(basePointer: u16, subPointer: Uint8Array, user: Address, val: u256): void {
+        const map: StoredMapU256 = new StoredMapU256(basePointer, subPointer);
         map.set(u256.fromUint8ArrayBE(user), val);
     }
 
-    private addUserBet(basePointer: u16, marketIdBytes: Uint8Array, user: Address, amount: u256): void {
-        const current: u256 = this.getUserBet(basePointer, marketIdBytes, user);
-        this.setUserBet(basePointer, marketIdBytes, user, SafeMath.add(current, amount));
+    private addUserBet(basePointer: u16, subPointer: Uint8Array, user: Address, amount: u256): void {
+        const current: u256 = this.getUserBet(basePointer, subPointer, user);
+        this.setUserBet(basePointer, subPointer, user, SafeMath.add(current, amount));
     }
 }

@@ -55,7 +55,7 @@ export function usePredictionMarket(): {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const contractAddress = 'opt1sqpn6p5drtsxnw0703hp9sjjxz588lwhmfq7j92vm';
+    const contractAddress = 'opt1sqp68ve9ztlmjl63fk43sspzln2u0ew4auuuctw3h';
 
     const fetchMarketCount = useCallback(async (): Promise<bigint> => {
         const contract = createContract(contractAddress, network);
@@ -99,13 +99,17 @@ export function usePredictionMarket(): {
 
     const createMarket = useCallback(async (
         question: string,
-        endBlock: bigint,
+        blocksFromNow: bigint,
         oracle: string,
     ): Promise<void> => {
         if (!address) throw new Error('Wallet not connected');
         setLoading(true);
         setError(null);
         try {
+            const provider = createProvider(network);
+            const currentBlock = await provider.getBlockNumber();
+            const endBlock = BigInt(currentBlock) + blocksFromNow;
+
             const contract = createContract(contractAddress, network);
             const oracleAddr = hexToAddress(oracle);
             const sim = await contract.createMarket(question, endBlock, oracleAddr);
