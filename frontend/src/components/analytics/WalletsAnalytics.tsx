@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend,
@@ -171,9 +171,8 @@ export function WalletsAnalytics({ data, search }: Props): React.JSX.Element {
                         </thead>
                         <tbody>
                             {filtered.map((w) => (
-                                <>
+                                <React.Fragment key={w.address}>
                                     <tr
-                                        key={w.address}
                                         onClick={() => setExpandedWallet(expandedWallet === w.address ? null : w.address)}
                                         className="border-b border-[#2a2a3a]/50 hover:bg-[#1a1a24] cursor-pointer transition-colors"
                                     >
@@ -187,7 +186,7 @@ export function WalletsAnalytics({ data, search }: Props): React.JSX.Element {
                                         <td className="py-2.5 text-right text-[#e4e4ec] font-medium">{w.totalActivity}</td>
                                     </tr>
                                     {expandedWallet === w.address && (
-                                        <tr key={`${w.address}-detail`}>
+                                        <tr>
                                             <td colSpan={4} className="py-3 px-4 bg-[#0a0a0f]">
                                                 <p className="text-xs text-[#555] mb-2 font-mono break-all">{w.address}</p>
                                                 {walletMarkets.length > 0 ? (
@@ -212,7 +211,7 @@ export function WalletsAnalytics({ data, search }: Props): React.JSX.Element {
                                             </td>
                                         </tr>
                                     )}
-                                </>
+                                </React.Fragment>
                             ))}
                             {filtered.length === 0 && (
                                 <tr>
