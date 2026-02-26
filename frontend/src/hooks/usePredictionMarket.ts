@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useWalletConnect } from '@btc-vision/walletconnect';
 import { networks } from '@btc-vision/bitcoin';
+import { Address } from '@btc-vision/transaction';
 import { JSONRpcProvider, getContract, BaseContractProperties } from 'opnet';
 import type { BitcoinInterfaceAbi } from 'opnet';
 import { useNetwork } from './useNetwork';
@@ -10,6 +11,15 @@ import { MarketData, MarketStatus, MarketOutcome, UserPosition } from '../types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyContract = ReturnType<typeof getContract<BaseContractProperties>> & Record<string, (...args: any[]) => Promise<any>>;
+
+function hexToAddress(hex: string): Address {
+    const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+    const bytes = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(clean.substring(i * 2, i * 2 + 2), 16);
+    }
+    return Address.wrap(bytes);
+}
 
 function createProvider(network: typeof networks.bitcoin): JSONRpcProvider {
     const config = getNetworkConfig(network);
@@ -45,7 +55,7 @@ export function usePredictionMarket(): {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const contractAddress = 'opt1sqzqcpve4tarvwc987wvw47fe0cawzvwe8s3cjy75';
+    const contractAddress = 'opt1sqptn0f384fl2k3qmgaacgdg0wmlkr53twqxy69k0';
 
     const fetchMarketCount = useCallback(async (): Promise<bigint> => {
         const contract = createContract(contractAddress, network);
@@ -76,7 +86,8 @@ export function usePredictionMarket(): {
     const fetchUserPosition = useCallback(async (marketId: bigint): Promise<UserPosition> => {
         if (!address) throw new Error('Wallet not connected');
         const contract = createContract(contractAddress, network);
-        const result = await contract.getUserPosition(marketId, String(address));
+        const userAddr = hexToAddress(String(address));
+        const result = await contract.getUserPosition(marketId, userAddr);
         if (result.revert) throw new Error('Failed to fetch user position');
 
         return {
@@ -96,7 +107,8 @@ export function usePredictionMarket(): {
         setError(null);
         try {
             const contract = createContract(contractAddress, network);
-            const sim = await contract.createMarket(question, endBlock, oracle);
+            const oracleAddr = hexToAddress(oracle);
+            const sim = await contract.createMarket(question, endBlock, oracleAddr);
             if (sim.revert) throw new Error(`Create market failed: ${String(sim.revert)}`);
 
             await sim.sendTransaction({

@@ -87,6 +87,8 @@ async function main(): Promise<void> {
         feeRate: 5,
         priorityFee: 330n,
         gasSatFee: 10_000n,
+        linkMLDSAPublicKeyToAddress: true,
+        revealMLDSAPublicKey: true,
     });
 
     console.log('\nContract address:', result.contractAddress);
