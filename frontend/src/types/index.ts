@@ -28,6 +28,12 @@ export interface UserPosition {
     claimed: boolean;
 }
 
+export interface MarketMetadata {
+    coin: string;
+    targetPrice: number;
+    deadline: string; // ISO date string
+}
+
 export interface CreateMarketParams {
     question: string;
     endBlock: bigint;

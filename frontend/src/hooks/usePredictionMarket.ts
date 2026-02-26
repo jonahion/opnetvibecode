@@ -7,7 +7,7 @@ import type { BitcoinInterfaceAbi } from 'opnet';
 import { useNetwork } from './useNetwork';
 import { getNetworkConfig } from '../config';
 import { PREDICTION_MARKET_ABI } from '../abi/PredictionMarketABI';
-import { MarketData, MarketStatus, MarketOutcome, UserPosition } from '../types';
+import { MarketData, MarketStatus, MarketOutcome, UserPosition, MarketMetadata } from '../types';
 import { getMarketTitle, saveMarketQuestion } from '../utils/marketQuestions';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,7 +109,7 @@ export function usePredictionMarket(): {
     fetchMarketCount: () => Promise<bigint>;
     fetchMarket: (marketId: bigint) => Promise<MarketData>;
     fetchUserPosition: (marketId: bigint) => Promise<UserPosition>;
-    createMarket: (question: string, endBlock: bigint, oracle: string) => Promise<void>;
+    createMarket: (question: string, endBlock: bigint, oracle: string, metadata?: MarketMetadata) => Promise<void>;
     placeBet: (marketId: bigint, outcome: MarketOutcome, amount: bigint) => Promise<void>;
     resolveMarket: (marketId: bigint, outcome: MarketOutcome) => Promise<void>;
     claimWinnings: (marketId: bigint) => Promise<void>;
@@ -165,6 +165,7 @@ export function usePredictionMarket(): {
         question: string,
         blocksFromNow: bigint,
         oracle: string,
+        metadata?: MarketMetadata,
     ): Promise<void> => {
         setLoading(true);
         setError(null);
@@ -190,12 +191,12 @@ export function usePredictionMarket(): {
             // Save question to Supabase for display
             const marketId = sim.properties?.marketId as bigint | undefined;
             if (marketId) {
-                void saveMarketQuestion(marketId, question);
+                void saveMarketQuestion(marketId, question, metadata);
             } else {
                 // Fallback: save for next market count
                 try {
                     const count = await fetchMarketCount();
-                    void saveMarketQuestion(count, question);
+                    void saveMarketQuestion(count, question, metadata);
                 } catch {
                     // best-effort
                 }

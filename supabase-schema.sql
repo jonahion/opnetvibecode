@@ -1,9 +1,12 @@
 -- Run this in your Supabase SQL Editor to create the required tables.
 
--- Market questions: stores the question text for each market ID
+-- Market questions: stores the question text and structured metadata for each market ID
 create table if not exists market_questions (
     market_id bigint primary key,
     question text not null,
+    coin text,
+    target_price numeric,
+    deadline timestamptz,
     created_at timestamptz default now()
 );
 
@@ -46,3 +49,9 @@ create policy "Anyone can read analytics cache"
 create policy "Anyone can update analytics cache"
     on analytics_cache for update
     using (true);
+
+-- Migration: add structured metadata columns to existing market_questions table
+-- Run this if the table already exists without these columns:
+-- ALTER TABLE market_questions ADD COLUMN IF NOT EXISTS coin text;
+-- ALTER TABLE market_questions ADD COLUMN IF NOT EXISTS target_price numeric;
+-- ALTER TABLE market_questions ADD COLUMN IF NOT EXISTS deadline timestamptz;

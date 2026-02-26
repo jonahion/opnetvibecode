@@ -9,6 +9,7 @@ import { Card } from '../common/Card';
 import { AnalyticsData, MarketAnalytics } from '../../hooks/useAnalytics';
 import { MarketStatus } from '../../types';
 import { filterMarkets } from '../../utils/filterMarkets';
+import { getAllMarketMetadata } from '../../utils/marketQuestions';
 
 interface Props {
     data: AnalyticsData;
@@ -107,15 +108,21 @@ function CoinFilter({ value, onChange }: { value: string; onChange: (v: string) 
 export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): React.JSX.Element {
     const [coinFilter, setCoinFilter] = useState('');
 
+    const metadataMap = useMemo(() => getAllMarketMetadata(), [data.markets]);
+
     const filtered = useMemo((): MarketAnalytics[] => {
         let markets = filterMarkets({ markets: data.markets, search, blockRange, dateRange });
-        // Additional coin filter: match coin name in question
+        // Filter by coin: prefer structured metadata, fall back to question text
         if (coinFilter) {
-            const q = coinFilter.toLowerCase();
-            markets = markets.filter((m) => m.question.toLowerCase().includes(q));
+            const q = coinFilter.toUpperCase();
+            markets = markets.filter((m) => {
+                const meta = metadataMap.get(m.id.toString());
+                if (meta?.coin) return meta.coin.toUpperCase() === q;
+                return m.question.toUpperCase().includes(q);
+            });
         }
         return markets;
-    }, [data.markets, search, blockRange, dateRange, coinFilter]);
+    }, [data.markets, search, blockRange, dateRange, coinFilter, metadataMap]);
 
     const totalSats = filtered.reduce((acc, m) => acc + Number(m.totalPool), 0);
     const totalYes = filtered.reduce((acc, m) => acc + Number(m.yesPool), 0);
@@ -162,6 +169,24 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
             name: m.question.length > 20 ? `#${m.id}` : m.question,
             size: Number(m.totalPool),
         }));
+
+    // Coin breakdown — aggregate by coin from structured metadata
+    const coinBreakdown = useMemo(() => {
+        const coinMap = new Map<string, { markets: number; totalPool: number; yesPool: number; noPool: number }>();
+        for (const m of filtered) {
+            const meta = metadataMap.get(m.id.toString());
+            const coinName = meta?.coin ?? 'Other';
+            const existing = coinMap.get(coinName) ?? { markets: 0, totalPool: 0, yesPool: 0, noPool: 0 };
+            existing.markets++;
+            existing.totalPool += Number(m.totalPool);
+            existing.yesPool += Number(m.yesPool);
+            existing.noPool += Number(m.noPool);
+            coinMap.set(coinName, existing);
+        }
+        return Array.from(coinMap.entries())
+            .map(([coin, stats]) => ({ coin, ...stats }))
+            .sort((a, b) => b.totalPool - a.totalPool);
+    }, [filtered, metadataMap]);
 
     // Sats concentration — top markets by %
     const concentrationData = useMemo(() => {
@@ -341,6 +366,41 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                     )}
                 </Card>
             </div>
+
+            {/* Coin breakdown */}
+            {coinBreakdown.length > 0 && (
+                <Card>
+                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">
+                        Volume by Coin
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="text-[#555] text-xs uppercase tracking-wider border-b border-[#2a2a3a]">
+                                    <th className="text-left py-2 pr-3">Coin</th>
+                                    <th className="text-right py-2 pr-3">Markets</th>
+                                    <th className="text-right py-2 pr-3">Total Pool</th>
+                                    <th className="text-right py-2 pr-3">YES</th>
+                                    <th className="text-right py-2">NO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {coinBreakdown.map((row) => (
+                                    <tr key={row.coin} className="border-b border-[#2a2a3a]/50">
+                                        <td className="py-2.5 pr-3">
+                                            <span className="text-[#f7931a] font-semibold">{row.coin}</span>
+                                        </td>
+                                        <td className="py-2.5 pr-3 text-right text-[#e4e4ec]">{row.markets}</td>
+                                        <td className="py-2.5 pr-3 text-right text-[#e4e4ec]">{formatSats(row.totalPool)}</td>
+                                        <td className="py-2.5 pr-3 text-right text-green-400">{formatSats(row.yesPool)}</td>
+                                        <td className="py-2.5 text-right text-red-400">{formatSats(row.noPool)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
 
             {/* Concentration table */}
             <Card>
