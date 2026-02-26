@@ -29,6 +29,7 @@ export function MarketDetail(): React.JSX.Element {
     const [position, setPosition] = useState<UserPosition | null>(null);
     const [loadingData, setLoadingData] = useState(true);
     const [betAmount, setBetAmount] = useState('10000');
+    const [errorSource, setErrorSource] = useState<'bet' | 'resolve' | 'claim' | null>(null);
 
     const marketId = BigInt(id ?? '0');
 
@@ -53,9 +54,11 @@ export function MarketDetail(): React.JSX.Element {
     }, [loadData]);
 
     const handleBet = async (outcome: MarketOutcome): Promise<void> => {
+        setErrorSource('bet');
         try {
             const amount = BigInt(betAmount);
             await placeBet(marketId, outcome, amount);
+            setErrorSource(null);
             await loadData();
         } catch {
             // error is set by the hook
@@ -63,8 +66,10 @@ export function MarketDetail(): React.JSX.Element {
     };
 
     const handleResolve = async (outcome: MarketOutcome): Promise<void> => {
+        setErrorSource('resolve');
         try {
             await resolveMarket(marketId, outcome);
+            setErrorSource(null);
             await loadData();
         } catch {
             // error is set by the hook
@@ -72,8 +77,10 @@ export function MarketDetail(): React.JSX.Element {
     };
 
     const handleClaim = async (): Promise<void> => {
+        setErrorSource('claim');
         try {
             await claimWinnings(marketId);
+            setErrorSource(null);
             await loadData();
         } catch {
             // error is set by the hook
@@ -197,7 +204,7 @@ export function MarketDetail(): React.JSX.Element {
                             {loading ? 'Placing...' : `Bet NO (${noPercent.toFixed(0)}%)`}
                         </Button>
                     </div>
-                    {error && (
+                    {error && errorSource === 'bet' && (
                         <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
                             {error}
                         </div>
@@ -230,7 +237,7 @@ export function MarketDetail(): React.JSX.Element {
                             >
                                 {loading ? 'Claiming...' : 'Claim Winnings'}
                             </Button>
-                            {error && (
+                            {error && errorSource === 'claim' && (
                                 <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
                                     {error}
                                 </div>
@@ -270,7 +277,7 @@ export function MarketDetail(): React.JSX.Element {
                             Resolve NO
                         </Button>
                     </div>
-                    {error && (
+                    {error && errorSource === 'resolve' && (
                         <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
                             {error}
                         </div>

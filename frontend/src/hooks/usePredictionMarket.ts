@@ -29,6 +29,19 @@ function friendlyError(raw: string): string {
     if (raw.includes('Wallet not connected')) {
         return 'Wallet not connected. Click "Connect OP_WALLET" to continue.';
     }
+    if (raw.includes('Only the designated oracle')) {
+        return 'Only the designated oracle can resolve this market. Your wallet is not the oracle for this market.';
+    }
+    if (raw.includes('Market has not ended') || raw.includes('not ended')) {
+        return 'This market has not ended yet. It can only be resolved after the end block is reached.';
+    }
+    if (raw.includes('Market is not open') || raw.includes('not open')) {
+        return 'This market is no longer open for betting.';
+    }
+    if (raw.includes('Error in calling function:')) {
+        const reason = raw.replace(/.*Error in calling function:\s*/i, '').replace(/\s*at\s+src\/.*$/i, '').trim();
+        return `Contract error: ${reason}`;
+    }
     if (raw.includes('revert') || raw.includes('Simulation reverted')) {
         return `Contract call reverted: ${raw.replace(/.*revert(?:ed)?:?\s*/i, '')}`;
     }
@@ -153,10 +166,10 @@ export function usePredictionMarket(): {
         blocksFromNow: bigint,
         oracle: string,
     ): Promise<void> => {
-        if (!address) throw new Error('Wallet not connected');
         setLoading(true);
         setError(null);
         try {
+            if (!address) throw new Error('Wallet not connected');
             const provider = createProvider(network);
             const currentBlock = await provider.getBlockNumber();
             const endBlock = BigInt(currentBlock) + blocksFromNow;
@@ -201,10 +214,10 @@ export function usePredictionMarket(): {
         outcome: MarketOutcome,
         amount: bigint,
     ): Promise<void> => {
-        if (!address) throw new Error('Wallet not connected');
         setLoading(true);
         setError(null);
         try {
+            if (!address) throw new Error('Wallet not connected');
             const contract = createContract(contractAddress, network);
             const sim = await contract.placeBet(marketId, BigInt(outcome), amount);
             if (sim.revert) throw new Error(`Place bet failed: ${String(sim.revert)}`);
@@ -229,10 +242,10 @@ export function usePredictionMarket(): {
         marketId: bigint,
         outcome: MarketOutcome,
     ): Promise<void> => {
-        if (!address) throw new Error('Wallet not connected');
         setLoading(true);
         setError(null);
         try {
+            if (!address) throw new Error('Wallet not connected');
             const contract = createContract(contractAddress, network);
             const sim = await contract.resolveMarket(marketId, BigInt(outcome));
             if (sim.revert) throw new Error(`Resolve market failed: ${String(sim.revert)}`);
@@ -254,10 +267,10 @@ export function usePredictionMarket(): {
     }, [network, address, contractAddress]);
 
     const claimWinnings = useCallback(async (marketId: bigint): Promise<void> => {
-        if (!address) throw new Error('Wallet not connected');
         setLoading(true);
         setError(null);
         try {
+            if (!address) throw new Error('Wallet not connected');
             const contract = createContract(contractAddress, network);
             const sim = await contract.claimWinnings(marketId);
             if (sim.revert) throw new Error(`Claim failed: ${String(sim.revert)}`);
