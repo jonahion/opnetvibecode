@@ -48,7 +48,7 @@ export function usePredictionMarket(): {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const contractAddress = 'DEPLOY_AND_REPLACE_WITH_TESTNET_ADDRESS';
+    const contractAddress = 'opt1sqzqcpve4tarvwc987wvw47fe0cawzvwe8s3cjy75';
 
     const fetchMarketCount = useCallback(async (): Promise<bigint> => {
         const contract = createContract(contractAddress, network);
