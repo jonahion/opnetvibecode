@@ -49,7 +49,32 @@ function hexToAddress(hex: string): Address {
 
 function createProvider(network: typeof networks.bitcoin): JSONRpcProvider {
     const config = getNetworkConfig(network);
-    return new JSONRpcProvider({ url: config.rpcUrl, network });
+    const provider = new JSONRpcProvider({ url: config.rpcUrl, network });
+
+    // Patch: fallback to OP_WALLET broadcast when RPC rejects the interaction tx.
+    // OP_WALLET v1.8.1 may produce interaction txs that our RPC rejects with
+    // "Could not decode transaction" but the wallet's own pushTx accepts.
+    const origSend = provider.sendRawTransaction.bind(provider);
+    provider.sendRawTransaction = async (tx: string, psbt: boolean) => {
+        const result = await origSend(tx, psbt);
+        if (result && !result.success && typeof result.result === 'string' && result.result.includes('Could not decode')) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const opwallet = (window as any).opnet?.web3?.provider;
+            if (opwallet?.pushTx) {
+                try {
+                    const txid = await opwallet.pushTx(tx);
+                    if (txid) {
+                        return { success: true, result: typeof txid === 'string' ? txid : String(txid), peers: 0 };
+                    }
+                } catch {
+                    // pushTx failed too, return original error
+                }
+            }
+        }
+        return result;
+    };
+
+    return provider;
 }
 
 function createContract(
