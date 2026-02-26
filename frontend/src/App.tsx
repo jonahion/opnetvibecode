@@ -3,6 +3,7 @@ import { WalletButton } from './components/wallet/WalletButton';
 import { MarketList } from './components/market/MarketList';
 import { MarketDetail } from './components/market/MarketDetail';
 import { CreateMarketForm } from './components/market/CreateMarketForm';
+import { AnalyticsPage } from './components/analytics/AnalyticsPage';
 
 function NavLink({ to, label }: { to: string; label: string }): React.JSX.Element {
     const location = useLocation();
@@ -33,6 +34,7 @@ export function App(): React.JSX.Element {
                         <nav className="flex items-center gap-5">
                             <NavLink to="/" label="Markets" />
                             <NavLink to="/create" label="Create" />
+                            <NavLink to="/analytics" label="Analytics" />
                         </nav>
                     </div>
                     <WalletButton />
@@ -44,6 +46,7 @@ export function App(): React.JSX.Element {
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/create" element={<CreateMarketForm />} />
                     <Route path="/market/:id" element={<MarketDetail />} />
+                    <Route path="/analytics" element={<AnalyticsPage />} />
                 </Routes>
             </main>
 
