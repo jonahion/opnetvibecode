@@ -52,15 +52,23 @@ export function MarketList(): React.JSX.Element {
                 <p className="text-3xl mb-3">&#x1f52e;</p>
                 <p className="text-[#8888a0] text-lg">No markets yet</p>
                 <p className="text-[#555] text-sm mt-1">Be the first to create a prediction market!</p>
+                <p className="text-[#555] text-xs mt-4">
+                    Recently created a market? It may take ~10 min for the next block to confirm it.
+                </p>
             </div>
         );
     }
 
     return (
-        <div className="grid gap-4 md:grid-cols-2">
-            {markets.map((market) => (
-                <MarketCard key={market.id.toString()} market={market} />
-            ))}
+        <div>
+            <div className="mb-4 text-xs text-[#555] bg-[#1a1a2a] border border-[#2a2a3a] rounded-lg px-4 py-2">
+                OPNet blocks are mined every ~10 minutes. New markets and bets appear after block confirmation.
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+                {markets.map((market) => (
+                    <MarketCard key={market.id.toString()} market={market} />
+                ))}
+            </div>
         </div>
     );
 }

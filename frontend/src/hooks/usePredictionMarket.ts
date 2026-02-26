@@ -51,7 +51,7 @@ export function usePredictionMarket(): {
     claimWinnings: (marketId: bigint) => Promise<void>;
 } {
     const { network } = useNetwork();
-    const { address } = useWalletConnect();
+    const { address, walletAddress } = useWalletConnect();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -118,7 +118,7 @@ export function usePredictionMarket(): {
             await sim.sendTransaction({
                 signer: null,
                 mldsaSigner: null,
-                refundTo: String(address),
+                refundTo: walletAddress!,
                 maximumAllowedSatToSpend: 50000n,
                 network,
             });
@@ -147,7 +147,7 @@ export function usePredictionMarket(): {
             await sim.sendTransaction({
                 signer: null,
                 mldsaSigner: null,
-                refundTo: String(address),
+                refundTo: walletAddress!,
                 maximumAllowedSatToSpend: 50000n,
                 network,
             });
@@ -175,7 +175,7 @@ export function usePredictionMarket(): {
             await sim.sendTransaction({
                 signer: null,
                 mldsaSigner: null,
-                refundTo: String(address),
+                refundTo: walletAddress!,
                 maximumAllowedSatToSpend: 50000n,
                 network,
             });
@@ -200,7 +200,7 @@ export function usePredictionMarket(): {
             await sim.sendTransaction({
                 signer: null,
                 mldsaSigner: null,
-                refundTo: String(address),
+                refundTo: walletAddress!,
                 maximumAllowedSatToSpend: 50000n,
                 network,
             });

@@ -84,8 +84,11 @@ export function CreateMarketForm(): React.JSX.Element {
                 )}
 
                 {success && (
-                    <div className="text-green-400 text-sm bg-green-400/10 px-4 py-2 rounded-lg">
-                        Market created successfully!
+                    <div className="text-green-400 text-sm bg-green-400/10 px-4 py-3 rounded-lg">
+                        <p className="font-medium">Transaction submitted!</p>
+                        <p className="text-green-400/80 mt-1">
+                            Your market will appear on the Markets page after the next block confirmation (~10 min).
+                        </p>
                     </div>
                 )}
 
