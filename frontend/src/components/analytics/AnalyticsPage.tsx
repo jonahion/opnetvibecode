@@ -1,21 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { OverviewAnalytics } from './OverviewAnalytics';
 import { MarketsAnalytics } from './MarketsAnalytics';
 import { TrendsAnalytics } from './TrendsAnalytics';
 import { WalletsAnalytics } from './WalletsAnalytics';
+import { OraclesAnalytics } from './OraclesAnalytics';
+import { CoinsAnalytics } from './CoinsAnalytics';
 
-type Tab = 'markets' | 'trends' | 'wallets';
+type Tab = 'overview' | 'markets' | 'trends' | 'wallets' | 'oracles' | 'coins';
 
 const TABS: { key: Tab; label: string }[] = [
+    { key: 'overview', label: 'Overview' },
     { key: 'markets', label: 'Markets' },
     { key: 'trends', label: 'Trends' },
+    { key: 'oracles', label: 'Oracles' },
+    { key: 'coins', label: 'Coins' },
     { key: 'wallets', label: 'Wallets' },
 ];
 
 export function AnalyticsPage(): React.JSX.Element {
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = (searchParams.get('tab') as Tab) || 'markets';
+    const activeTab = (searchParams.get('tab') as Tab) || 'overview';
     const { data, loading, error, refresh } = useAnalytics();
     const [search, setSearch] = useState('');
     const [blockRange, setBlockRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
@@ -45,12 +51,12 @@ export function AnalyticsPage(): React.JSX.Element {
             </div>
 
             {/* Sub-tabs */}
-            <div className="flex gap-1 bg-[#111118] border border-[#2a2a3a] rounded-xl p-1 mb-6">
+            <div className="flex gap-1 bg-[#111118] border border-[#2a2a3a] rounded-xl p-1 mb-6 overflow-x-auto">
                 {TABS.map((tab) => (
                     <button
                         key={tab.key}
                         onClick={() => setTab(tab.key)}
-                        className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                        className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                             activeTab === tab.key
                                 ? 'bg-[#f7931a] text-black'
                                 : 'text-[#8888a0] hover:text-[#e4e4ec] hover:bg-[#1a1a24]'
@@ -67,7 +73,7 @@ export function AnalyticsPage(): React.JSX.Element {
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search markets, wallets..."
+                    placeholder="Search markets, wallets, oracles..."
                     className="flex-1 min-w-[200px] bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-2.5 text-sm text-[#e4e4ec] placeholder-[#555] focus:border-[#f7931a] focus:outline-none transition-colors"
                 />
                 <div className="flex items-center gap-2">
@@ -110,11 +116,20 @@ export function AnalyticsPage(): React.JSX.Element {
                 </div>
             )}
 
+            {data && activeTab === 'overview' && (
+                <OverviewAnalytics data={data} search={search} blockRange={blockRange} />
+            )}
             {data && activeTab === 'markets' && (
                 <MarketsAnalytics data={data} search={search} blockRange={blockRange} />
             )}
             {data && activeTab === 'trends' && (
                 <TrendsAnalytics data={data} search={search} blockRange={blockRange} />
+            )}
+            {data && activeTab === 'oracles' && (
+                <OraclesAnalytics data={data} search={search} />
+            )}
+            {data && activeTab === 'coins' && (
+                <CoinsAnalytics data={data} search={search} blockRange={blockRange} />
             )}
             {data && activeTab === 'wallets' && (
                 <WalletsAnalytics data={data} search={search} />
