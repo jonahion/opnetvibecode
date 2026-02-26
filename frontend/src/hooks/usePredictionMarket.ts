@@ -3,7 +3,6 @@ import { useWalletConnect } from '@btc-vision/walletconnect';
 import { networks } from '@btc-vision/bitcoin';
 import { JSONRpcProvider, getContract, BaseContractProperties } from 'opnet';
 import type { BitcoinInterfaceAbi } from 'opnet';
-import { Address } from '@btc-vision/transaction';
 import { useNetwork } from './useNetwork';
 import { getNetworkConfig } from '../config';
 import { PREDICTION_MARKET_ABI } from '../abi/PredictionMarketABI';
@@ -20,7 +19,6 @@ function createProvider(network: typeof networks.bitcoin): JSONRpcProvider {
 function createContract(
     contractAddress: string,
     network: typeof networks.bitcoin,
-    senderAddress?: Address,
 ): AnyContract {
     const provider = createProvider(network);
     return getContract<BaseContractProperties>(
@@ -28,7 +26,6 @@ function createContract(
         PREDICTION_MARKET_ABI as BitcoinInterfaceAbi,
         provider,
         network,
-        senderAddress,
     ) as unknown as AnyContract;
 }
 
@@ -78,8 +75,8 @@ export function usePredictionMarket(): {
 
     const fetchUserPosition = useCallback(async (marketId: bigint): Promise<UserPosition> => {
         if (!address) throw new Error('Wallet not connected');
-        const contract = createContract(contractAddress, network, address);
-        const result = await contract.getUserPosition(marketId, address);
+        const contract = createContract(contractAddress, network);
+        const result = await contract.getUserPosition(marketId, String(address));
         if (result.revert) throw new Error('Failed to fetch user position');
 
         return {
@@ -98,7 +95,7 @@ export function usePredictionMarket(): {
         setLoading(true);
         setError(null);
         try {
-            const contract = createContract(contractAddress, network, address);
+            const contract = createContract(contractAddress, network);
             const sim = await contract.createMarket(question, endBlock, oracle);
             if (sim.revert) throw new Error(`Create market failed: ${String(sim.revert)}`);
 
@@ -127,7 +124,7 @@ export function usePredictionMarket(): {
         setLoading(true);
         setError(null);
         try {
-            const contract = createContract(contractAddress, network, address);
+            const contract = createContract(contractAddress, network);
             const sim = await contract.placeBet(marketId, BigInt(outcome), amount);
             if (sim.revert) throw new Error(`Place bet failed: ${String(sim.revert)}`);
 
@@ -155,7 +152,7 @@ export function usePredictionMarket(): {
         setLoading(true);
         setError(null);
         try {
-            const contract = createContract(contractAddress, network, address);
+            const contract = createContract(contractAddress, network);
             const sim = await contract.resolveMarket(marketId, BigInt(outcome));
             if (sim.revert) throw new Error(`Resolve market failed: ${String(sim.revert)}`);
 
@@ -180,7 +177,7 @@ export function usePredictionMarket(): {
         setLoading(true);
         setError(null);
         try {
-            const contract = createContract(contractAddress, network, address);
+            const contract = createContract(contractAddress, network);
             const sim = await contract.claimWinnings(marketId);
             if (sim.revert) throw new Error(`Claim failed: ${String(sim.revert)}`);
 
