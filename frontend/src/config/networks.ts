@@ -25,9 +25,10 @@ export const NETWORK_CONFIGS: Map<string, NetworkConfig> = new Map([
 ]);
 
 export function getNetworkId(network: Network): string {
-    if (network === networks.bitcoin) return 'mainnet';
-    if (network === networks.opnetTestnet) return 'testnet';
-    if (network === networks.regtest) return 'regtest';
+    const bech32 = network.bech32;
+    if (bech32 === networks.bitcoin.bech32) return 'mainnet';
+    if (bech32 === networks.opnetTestnet.bech32) return 'testnet';
+    if (bech32 === networks.regtest.bech32) return 'regtest';
     return 'unknown';
 }
 
