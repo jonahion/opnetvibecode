@@ -53,19 +53,31 @@ export function MarketDetail(): React.JSX.Element {
     }, [loadData]);
 
     const handleBet = async (outcome: MarketOutcome): Promise<void> => {
-        const amount = BigInt(betAmount);
-        await placeBet(marketId, outcome, amount);
-        await loadData();
+        try {
+            const amount = BigInt(betAmount);
+            await placeBet(marketId, outcome, amount);
+            await loadData();
+        } catch {
+            // error is set by the hook
+        }
     };
 
     const handleResolve = async (outcome: MarketOutcome): Promise<void> => {
-        await resolveMarket(marketId, outcome);
-        await loadData();
+        try {
+            await resolveMarket(marketId, outcome);
+            await loadData();
+        } catch {
+            // error is set by the hook
+        }
     };
 
     const handleClaim = async (): Promise<void> => {
-        await claimWinnings(marketId);
-        await loadData();
+        try {
+            await claimWinnings(marketId);
+            await loadData();
+        } catch {
+            // error is set by the hook
+        }
     };
 
     if (loadingData) {
@@ -186,7 +198,9 @@ export function MarketDetail(): React.JSX.Element {
                         </Button>
                     </div>
                     {error && (
-                        <p className="mt-3 text-red-400 text-sm">{error}</p>
+                        <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
+                            {error}
+                        </div>
                     )}
                 </Card>
             )}
@@ -206,15 +220,22 @@ export function MarketDetail(): React.JSX.Element {
                     </div>
 
                     {isResolved && !position.claimed && (
-                        <Button
-                            variant="primary"
-                            size="lg"
-                            className="w-full mt-4"
-                            onClick={handleClaim}
-                            disabled={loading}
-                        >
-                            {loading ? 'Claiming...' : 'Claim Winnings'}
-                        </Button>
+                        <>
+                            <Button
+                                variant="primary"
+                                size="lg"
+                                className="w-full mt-4"
+                                onClick={handleClaim}
+                                disabled={loading}
+                            >
+                                {loading ? 'Claiming...' : 'Claim Winnings'}
+                            </Button>
+                            {error && (
+                                <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+                        </>
                     )}
 
                     {position.claimed && (
@@ -249,6 +270,11 @@ export function MarketDetail(): React.JSX.Element {
                             Resolve NO
                         </Button>
                     </div>
+                    {error && (
+                        <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
+                            {error}
+                        </div>
+                    )}
                 </Card>
             )}
         </div>

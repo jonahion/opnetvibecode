@@ -13,6 +13,31 @@ import { getMarketTitle, saveMarketQuestion } from '../utils/marketQuestions';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyContract = ReturnType<typeof getContract<BaseContractProperties>> & Record<string, (...args: any[]) => Promise<any>>;
 
+function friendlyError(raw: string): string {
+    if (raw.includes('Insufficient UTXOs') || raw.includes('No UTXOs found')) {
+        const match = raw.match(/Available:\s*(\d+),\s*Needed:\s*(\d+)/);
+        if (match) {
+            const available = Number(match[1]).toLocaleString();
+            const needed = Number(match[2]).toLocaleString();
+            return `Insufficient funds. You have ${available} sats but this transaction requires ${needed} sats (bet + gas + fees). Fund your wallet with more testnet sats and try again.`;
+        }
+        return 'Insufficient funds. Your wallet does not have enough sats to cover the bet amount plus gas and fees. Fund your wallet and try again.';
+    }
+    if (raw.includes('Could not decode transaction')) {
+        return 'Transaction rejected by the network. This usually means your wallet has stale UTXOs. Try refreshing the page or reconnecting your wallet.';
+    }
+    if (raw.includes('Wallet not connected')) {
+        return 'Wallet not connected. Click "Connect OP_WALLET" to continue.';
+    }
+    if (raw.includes('revert') || raw.includes('Simulation reverted')) {
+        return `Contract call reverted: ${raw.replace(/.*revert(?:ed)?:?\s*/i, '')}`;
+    }
+    if (raw.includes('User rejected') || raw.includes('user rejected') || raw.includes('cancelled')) {
+        return 'Transaction cancelled by user.';
+    }
+    return raw;
+}
+
 function hexToAddress(hex: string): Address {
     const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
     const bytes = new Uint8Array(clean.length / 2);
@@ -139,7 +164,7 @@ export function usePredictionMarket(): {
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
-            setError(msg);
+            setError(friendlyError(msg));
             throw err;
         } finally {
             setLoading(false);
@@ -168,7 +193,7 @@ export function usePredictionMarket(): {
             });
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
-            setError(msg);
+            setError(friendlyError(msg));
             throw err;
         } finally {
             setLoading(false);
@@ -196,7 +221,7 @@ export function usePredictionMarket(): {
             });
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
-            setError(msg);
+            setError(friendlyError(msg));
             throw err;
         } finally {
             setLoading(false);
@@ -221,7 +246,7 @@ export function usePredictionMarket(): {
             });
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
-            setError(msg);
+            setError(friendlyError(msg));
             throw err;
         } finally {
             setLoading(false);

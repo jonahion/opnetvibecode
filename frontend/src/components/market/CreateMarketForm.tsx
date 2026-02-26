@@ -22,9 +22,13 @@ export function CreateMarketForm(): React.JSX.Element {
         const oracle = oracleAddress || addressStr;
         if (!oracle) return;
 
-        await createMarket(question, blocks, oracle);
-        setSuccess(true);
-        setQuestion('');
+        try {
+            await createMarket(question, blocks, oracle);
+            setSuccess(true);
+            setQuestion('');
+        } catch {
+            // error is set by the hook
+        }
     };
 
     return (
