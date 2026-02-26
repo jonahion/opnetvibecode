@@ -9,12 +9,12 @@ export interface NetworkConfig {
 export const NETWORK_CONFIGS: Map<string, NetworkConfig> = new Map([
     ['mainnet', {
         name: 'Mainnet',
-        rpcUrl: 'https://mainnet.opnet.org',
+        rpcUrl: 'https://mainnet.opnet.org/api/v1/json-rpc',
         explorerUrl: 'https://explorer.opnet.org',
     }],
     ['testnet', {
         name: 'OPNet Testnet',
-        rpcUrl: 'https://testnet.opnet.org',
+        rpcUrl: 'https://testnet.opnet.org/api/v1/json-rpc',
         explorerUrl: 'https://testnet-explorer.opnet.org',
     }],
     ['regtest', {
