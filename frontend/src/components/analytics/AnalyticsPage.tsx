@@ -25,6 +25,7 @@ export function AnalyticsPage(): React.JSX.Element {
     const { data, loading, error, refresh } = useAnalytics();
     const [search, setSearch] = useState('');
     const [blockRange, setBlockRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
+    const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
 
     useEffect(() => {
         void refresh();
@@ -32,6 +33,14 @@ export function AnalyticsPage(): React.JSX.Element {
 
     const setTab = (tab: Tab) => {
         setSearchParams({ tab });
+    };
+
+    const hasFilters = blockRange.from || blockRange.to || search || dateRange.from || dateRange.to;
+
+    const clearFilters = () => {
+        setSearch('');
+        setBlockRange({ from: '', to: '' });
+        setDateRange({ from: '', to: '' });
     };
 
     return (
@@ -42,7 +51,7 @@ export function AnalyticsPage(): React.JSX.Element {
                     <p className="text-[#8888a0] mt-1">On-chain prediction market insights</p>
                 </div>
                 <button
-                    onClick={() => void refresh()}
+                    onClick={() => void refresh(true)}
                     disabled={loading}
                     className="bg-[#1a1a2a] border border-[#2a2a3a] hover:border-[#f7931a] text-[#e4e4ec] px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50 cursor-pointer"
                 >
@@ -93,15 +102,31 @@ export function AnalyticsPage(): React.JSX.Element {
                         placeholder="To"
                         className="w-24 bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 py-2.5 text-sm text-[#e4e4ec] placeholder-[#555] focus:border-[#f7931a] focus:outline-none transition-colors"
                     />
-                    {(blockRange.from || blockRange.to || search) && (
-                        <button
-                            onClick={() => { setSearch(''); setBlockRange({ from: '', to: '' }); }}
-                            className="text-xs text-[#8888a0] hover:text-[#f7931a] transition-colors cursor-pointer"
-                        >
-                            Clear
-                        </button>
-                    )}
                 </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-[#555]">Date</span>
+                    <input
+                        type="date"
+                        value={dateRange.from}
+                        onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+                        className="bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 py-2 text-sm text-[#e4e4ec] focus:border-[#f7931a] focus:outline-none transition-colors [color-scheme:dark]"
+                    />
+                    <span className="text-[#555]">-</span>
+                    <input
+                        type="date"
+                        value={dateRange.to}
+                        onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
+                        className="bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 py-2 text-sm text-[#e4e4ec] focus:border-[#f7931a] focus:outline-none transition-colors [color-scheme:dark]"
+                    />
+                </div>
+                {hasFilters && (
+                    <button
+                        onClick={clearFilters}
+                        className="text-xs text-[#8888a0] hover:text-[#f7931a] transition-colors cursor-pointer px-2"
+                    >
+                        Clear
+                    </button>
+                )}
             </div>
 
             {error && (
@@ -117,19 +142,19 @@ export function AnalyticsPage(): React.JSX.Element {
             )}
 
             {data && activeTab === 'overview' && (
-                <OverviewAnalytics data={data} search={search} blockRange={blockRange} />
+                <OverviewAnalytics data={data} search={search} blockRange={blockRange} dateRange={dateRange} />
             )}
             {data && activeTab === 'markets' && (
-                <MarketsAnalytics data={data} search={search} blockRange={blockRange} />
+                <MarketsAnalytics data={data} search={search} blockRange={blockRange} dateRange={dateRange} />
             )}
             {data && activeTab === 'trends' && (
-                <TrendsAnalytics data={data} search={search} blockRange={blockRange} />
+                <TrendsAnalytics data={data} search={search} blockRange={blockRange} dateRange={dateRange} />
             )}
             {data && activeTab === 'oracles' && (
                 <OraclesAnalytics data={data} search={search} />
             )}
             {data && activeTab === 'coins' && (
-                <CoinsAnalytics data={data} search={search} blockRange={blockRange} />
+                <CoinsAnalytics data={data} search={search} blockRange={blockRange} dateRange={dateRange} />
             )}
             {data && activeTab === 'wallets' && (
                 <WalletsAnalytics data={data} search={search} />

@@ -5,11 +5,13 @@ import {
 } from 'recharts';
 import { Card } from '../common/Card';
 import { AnalyticsData, MarketAnalytics } from '../../hooks/useAnalytics';
+import { filterMarkets } from '../../utils/filterMarkets';
 
 interface Props {
     data: AnalyticsData;
     search: string;
     blockRange: { from: string; to: string };
+    dateRange: { from: string; to: string };
 }
 
 function formatSats(sats: bigint): string {
@@ -33,23 +35,10 @@ function ChartTooltip({ active, payload, label }: any): React.JSX.Element | null
     );
 }
 
-export function OverviewAnalytics({ data, search, blockRange }: Props): React.JSX.Element {
+export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props): React.JSX.Element {
     const filtered = useMemo((): MarketAnalytics[] => {
-        let markets = data.markets;
-        if (search) {
-            const q = search.toLowerCase();
-            markets = markets.filter(
-                (m) => m.question.toLowerCase().includes(q) || `#${m.id}`.includes(q),
-            );
-        }
-        if (blockRange.from) {
-            markets = markets.filter((m) => m.endBlock >= BigInt(blockRange.from));
-        }
-        if (blockRange.to) {
-            markets = markets.filter((m) => m.endBlock <= BigInt(blockRange.to));
-        }
-        return markets;
-    }, [data.markets, search, blockRange]);
+        return filterMarkets({ markets: data.markets, search, blockRange, dateRange });
+    }, [data.markets, search, blockRange, dateRange]);
 
     const tvl = useMemo(() => filtered.reduce((acc, m) => acc + m.totalPool, 0n), [filtered]);
     const tvlOpen = useMemo(

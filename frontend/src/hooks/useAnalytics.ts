@@ -1,6 +1,56 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { usePredictionMarket } from './usePredictionMarket';
 import { MarketData, MarketStatus, MarketOutcome } from '../types';
+
+const CACHE_KEY = 'oprophet_analytics_cache';
+const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
+
+interface CacheEntry {
+    timestamp: number;
+    // bigints serialized as strings
+    markets: Array<Omit<MarketData, 'id' | 'endBlock' | 'yesPool' | 'noPool'> & {
+        id: string; endBlock: string; yesPool: string; noPool: string;
+    }>;
+}
+
+function loadCache(): MarketData[] | null {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const entry = JSON.parse(raw) as CacheEntry;
+        if (Date.now() - entry.timestamp > CACHE_TTL) {
+            localStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+        return entry.markets.map((m) => ({
+            ...m,
+            id: BigInt(m.id),
+            endBlock: BigInt(m.endBlock),
+            yesPool: BigInt(m.yesPool),
+            noPool: BigInt(m.noPool),
+        }));
+    } catch {
+        return null;
+    }
+}
+
+function saveCache(markets: MarketData[]): void {
+    try {
+        const entry: CacheEntry = {
+            timestamp: Date.now(),
+            markets: markets.map((m) => ({
+                ...m,
+                id: m.id.toString(),
+                endBlock: m.endBlock.toString(),
+                yesPool: m.yesPool.toString(),
+                noPool: m.noPool.toString(),
+            })),
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+    } catch {
+        // quota exceeded or other error
+    }
+}
 
 export interface MarketAnalytics {
     id: bigint;
@@ -51,14 +101,19 @@ export function useAnalytics(): {
     data: AnalyticsData | null;
     loading: boolean;
     error: string | null;
-    refresh: () => Promise<void>;
+    refresh: (force?: boolean) => Promise<void>;
 } {
     const { fetchMarketCount, fetchMarket } = usePredictionMarket();
-    const [rawMarkets, setRawMarkets] = useState<MarketData[]>([]);
+    const [rawMarkets, setRawMarkets] = useState<MarketData[]>(() => loadCache() ?? []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const lastFetch = useRef(0);
 
-    const refresh = useCallback(async (): Promise<void> => {
+    const refresh = useCallback(async (force = false): Promise<void> => {
+        // Skip if recently fetched (within cache TTL) unless forced
+        if (!force && Date.now() - lastFetch.current < CACHE_TTL && rawMarkets.length > 0) {
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
@@ -72,12 +127,14 @@ export function useAnalytics(): {
                 }
             }
             setRawMarkets(markets);
+            saveCache(markets);
+            lastFetch.current = Date.now();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load analytics');
         } finally {
             setLoading(false);
         }
-    }, [fetchMarketCount, fetchMarket]);
+    }, [fetchMarketCount, fetchMarket, rawMarkets.length]);
 
     const data = useMemo((): AnalyticsData | null => {
         if (rawMarkets.length === 0) return null;

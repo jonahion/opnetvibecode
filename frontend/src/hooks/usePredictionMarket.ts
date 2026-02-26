@@ -8,6 +8,7 @@ import { useNetwork } from './useNetwork';
 import { getNetworkConfig } from '../config';
 import { PREDICTION_MARKET_ABI } from '../abi/PredictionMarketABI';
 import { MarketData, MarketStatus, MarketOutcome, UserPosition } from '../types';
+import { getMarketTitle, saveMarketQuestion } from '../utils/marketQuestions';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyContract = ReturnType<typeof getContract<BaseContractProperties>> & Record<string, (...args: any[]) => Promise<any>>;
@@ -79,7 +80,7 @@ export function usePredictionMarket(): {
             outcome: Number(props.outcome) as MarketOutcome,
             yesPool: props.yesPool as bigint,
             noPool: props.noPool as bigint,
-            question: `Market #${marketId}`,
+            question: getMarketTitle(marketId),
         };
     }, [network, contractAddress]);
 
@@ -122,6 +123,20 @@ export function usePredictionMarket(): {
                 maximumAllowedSatToSpend: 50000n,
                 network,
             });
+
+            // Save question to localStorage for display
+            const marketId = sim.properties?.marketId as bigint | undefined;
+            if (marketId) {
+                saveMarketQuestion(marketId, question);
+            } else {
+                // Fallback: save for next market count
+                try {
+                    const count = await fetchMarketCount();
+                    saveMarketQuestion(count, question);
+                } catch {
+                    // best-effort
+                }
+            }
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
             setError(msg);

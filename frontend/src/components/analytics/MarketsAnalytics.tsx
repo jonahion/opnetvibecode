@@ -7,11 +7,13 @@ import {
 import { Card } from '../common/Card';
 import { AnalyticsData, MarketAnalytics } from '../../hooks/useAnalytics';
 import { MarketStatus } from '../../types';
+import { filterMarkets } from '../../utils/filterMarkets';
 
 interface Props {
     data: AnalyticsData;
     search: string;
     blockRange: { from: string; to: string };
+    dateRange: { from: string; to: string };
 }
 
 function formatSats(sats: bigint): string {
@@ -44,32 +46,13 @@ function CustomTooltip({ active, payload, label }: any): React.JSX.Element | nul
     );
 }
 
-export function MarketsAnalytics({ data, search, blockRange }: Props): React.JSX.Element {
+export function MarketsAnalytics({ data, search, blockRange, dateRange }: Props): React.JSX.Element {
     const navigate = useNavigate();
     const { overview } = data;
 
     const filtered = useMemo((): MarketAnalytics[] => {
-        let markets = data.markets;
-        if (search) {
-            const q = search.toLowerCase();
-            markets = markets.filter(
-                (m) =>
-                    m.question.toLowerCase().includes(q) ||
-                    m.creator.toLowerCase().includes(q) ||
-                    m.oracle.toLowerCase().includes(q) ||
-                    `#${m.id}`.includes(q),
-            );
-        }
-        if (blockRange.from) {
-            const from = BigInt(blockRange.from);
-            markets = markets.filter((m) => m.endBlock >= from);
-        }
-        if (blockRange.to) {
-            const to = BigInt(blockRange.to);
-            markets = markets.filter((m) => m.endBlock <= to);
-        }
-        return markets;
-    }, [data.markets, search, blockRange]);
+        return filterMarkets({ markets: data.markets, search, blockRange, dateRange });
+    }, [data.markets, search, blockRange, dateRange]);
 
     const volumeData = filtered.map((m) => ({
         name: `#${m.id}`,
@@ -172,8 +155,8 @@ export function MarketsAnalytics({ data, search, blockRange }: Props): React.JSX
                                     onClick={() => navigate(`/market/${m.id}`)}
                                     className="border-b border-[#2a2a3a]/50 hover:bg-[#1a1a24] cursor-pointer transition-colors"
                                 >
-                                    <td className="py-2.5 pr-3 text-[#f7931a] font-medium">#{m.id.toString()}</td>
-                                    <td className="py-2.5 pr-3 text-[#e4e4ec] max-w-[200px] truncate">{m.question}</td>
+                                    <td className="py-2.5 pr-3 text-[#f7931a] font-medium whitespace-nowrap">#{m.id.toString()}</td>
+                                    <td className="py-2.5 pr-3 text-[#e4e4ec] max-w-[250px] truncate" title={m.question}>{m.question}</td>
                                     <td className="py-2.5 pr-3">
                                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                                             m.status === MarketStatus.OPEN

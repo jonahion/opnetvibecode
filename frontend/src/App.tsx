@@ -29,7 +29,7 @@ export function App(): React.JSX.Element {
                     <div className="flex items-center gap-8">
                         <Link to="/" className="flex items-center gap-2.5 no-underline">
                             <span className="text-2xl">&#x1f52e;</span>
-                            <span className="text-xl font-bold text-[#f7931a]">BTC Prophet</span>
+                            <span className="text-xl font-bold text-[#f7931a]">OProphet</span>
                         </Link>
                         <nav className="flex items-center gap-5">
                             <NavLink to="/" label="Markets" />
@@ -52,7 +52,7 @@ export function App(): React.JSX.Element {
 
             <footer className="border-t border-[#2a2a3a] mt-20">
                 <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm text-[#555]">
-                    BTC Prophet — Bitcoin Prediction Market on OPNet L1
+                    OProphet — Bitcoin Prediction Market on OPNet L1
                 </div>
             </footer>
         </div>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import {
     AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend,
@@ -8,12 +8,21 @@ import {
 import { Card } from '../common/Card';
 import { AnalyticsData, MarketAnalytics } from '../../hooks/useAnalytics';
 import { MarketStatus } from '../../types';
+import { filterMarkets } from '../../utils/filterMarkets';
 
 interface Props {
     data: AnalyticsData;
     search: string;
     blockRange: { from: string; to: string };
+    dateRange: { from: string; to: string };
 }
+
+// Common coins in crypto prediction markets
+const COIN_SUGGESTIONS = [
+    'BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'MATIC', 'LINK',
+    'UNI', 'ATOM', 'LTC', 'BCH', 'NEAR', 'APT', 'ARB', 'OP', 'SUI', 'SEI',
+    'TIA', 'INJ', 'FET', 'RNDR', 'STX', 'RUNE', 'PEPE', 'WIF', 'BONK',
+];
 
 function formatSats(sats: bigint | number): string {
     const n = typeof sats === 'bigint' ? Number(sats) : sats;
@@ -53,23 +62,60 @@ function TreemapContent({ x, y, width, height, name, value }: any): React.JSX.El
     );
 }
 
-export function CoinsAnalytics({ data, search, blockRange }: Props): React.JSX.Element {
+function CoinFilter({ value, onChange }: { value: string; onChange: (v: string) => void }): React.JSX.Element {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+    const suggestions = COIN_SUGGESTIONS.filter(
+        (c) => !value || c.toLowerCase().includes(value.toLowerCase()),
+    ).slice(0, 8);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    return (
+        <div ref={ref} className="relative">
+            <input
+                type="text"
+                value={value}
+                onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+                onFocus={() => setOpen(true)}
+                placeholder="Filter by coin (e.g. BTC, ETH)..."
+                className="w-full bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-2.5 text-sm text-[#e4e4ec] placeholder-[#555] focus:border-[#f7931a] focus:outline-none transition-colors"
+            />
+            {open && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a2a] border border-[#2a2a3a] rounded-xl overflow-hidden z-10 shadow-lg">
+                    {suggestions.map((coin) => (
+                        <button
+                            key={coin}
+                            onClick={() => { onChange(coin); setOpen(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-[#e4e4ec] hover:bg-[#f7931a]/10 hover:text-[#f7931a] transition-colors cursor-pointer"
+                        >
+                            {coin}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): React.JSX.Element {
+    const [coinFilter, setCoinFilter] = useState('');
+
     const filtered = useMemo((): MarketAnalytics[] => {
-        let markets = data.markets;
-        if (search) {
-            const q = search.toLowerCase();
-            markets = markets.filter(
-                (m) => m.question.toLowerCase().includes(q) || `#${m.id}`.includes(q),
-            );
-        }
-        if (blockRange.from) {
-            markets = markets.filter((m) => m.endBlock >= BigInt(blockRange.from));
-        }
-        if (blockRange.to) {
-            markets = markets.filter((m) => m.endBlock <= BigInt(blockRange.to));
+        let markets = filterMarkets({ markets: data.markets, search, blockRange, dateRange });
+        // Additional coin filter: match coin name in question
+        if (coinFilter) {
+            const q = coinFilter.toLowerCase();
+            markets = markets.filter((m) => m.question.toLowerCase().includes(q));
         }
         return markets;
-    }, [data.markets, search, blockRange]);
+    }, [data.markets, search, blockRange, dateRange, coinFilter]);
 
     const totalSats = filtered.reduce((acc, m) => acc + Number(m.totalPool), 0);
     const totalYes = filtered.reduce((acc, m) => acc + Number(m.yesPool), 0);
@@ -84,7 +130,7 @@ export function CoinsAnalytics({ data, search, blockRange }: Props): React.JSX.E
         return filtered.map((m) => {
             cumIn += Number(m.totalPool);
             return {
-                name: `#${m.id}`,
+                name: m.question.length > 20 ? `#${m.id}` : m.question,
                 'Total Locked': cumIn,
             };
         });
@@ -104,7 +150,7 @@ export function CoinsAnalytics({ data, search, blockRange }: Props): React.JSX.E
 
     // Per-market sats bar (YES/NO stacked)
     const perMarketSats = filtered.map((m) => ({
-        name: `#${m.id}`,
+        name: m.question.length > 20 ? `#${m.id}` : m.question,
         YES: Number(m.yesPool),
         NO: Number(m.noPool),
     }));
@@ -113,7 +159,7 @@ export function CoinsAnalytics({ data, search, blockRange }: Props): React.JSX.E
     const treemapData = filtered
         .filter((m) => Number(m.totalPool) > 0)
         .map((m) => ({
-            name: `#${m.id}`,
+            name: m.question.length > 20 ? `#${m.id}` : m.question,
             size: Number(m.totalPool),
         }));
 
@@ -126,15 +172,22 @@ export function CoinsAnalytics({ data, search, blockRange }: Props): React.JSX.E
             const pct = (Number(m.totalPool) / totalSats) * 100;
             cumPercent += pct;
             return {
-                name: `#${m.id}`,
-                '% of Total': Math.round(pct * 10) / 10,
-                'Cumulative %': Math.round(cumPercent * 10) / 10,
+                id: m.id,
+                question: m.question,
+                totalPool: m.totalPool,
+                pct: Math.round(pct * 10) / 10,
+                cumPct: Math.round(cumPercent * 10) / 10,
             };
         });
     }, [filtered, totalSats]);
 
     return (
         <div className="space-y-6">
+            {/* Coin filter */}
+            <div className="max-w-sm">
+                <CoinFilter value={coinFilter} onChange={setCoinFilter} />
+            </div>
+
             {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
@@ -306,21 +359,24 @@ export function CoinsAnalytics({ data, search, blockRange }: Props): React.JSX.E
                         </thead>
                         <tbody>
                             {concentrationData.map((row) => (
-                                <tr key={row.name} className="border-b border-[#2a2a3a]/50">
-                                    <td className="py-2.5 pr-3 text-[#f7931a] font-medium">{row.name}</td>
-                                    <td className="py-2.5 pr-3 text-right text-[#e4e4ec]">
-                                        {formatSats(filtered.find((m) => `#${m.id}` === row.name)?.totalPool ?? 0n)}
+                                <tr key={row.id.toString()} className="border-b border-[#2a2a3a]/50">
+                                    <td className="py-2.5 pr-3">
+                                        <span className="text-[#f7931a] font-medium">#{row.id.toString()}</span>
+                                        <span className="text-[#8888a0] ml-2 text-xs">{row.question}</span>
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-[#8888a0]">{row['% of Total']}%</td>
+                                    <td className="py-2.5 pr-3 text-right text-[#e4e4ec]">
+                                        {formatSats(row.totalPool)}
+                                    </td>
+                                    <td className="py-2.5 pr-3 text-right text-[#8888a0]">{row.pct}%</td>
                                     <td className="py-2.5 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <div className="w-16 h-1.5 bg-[#2a2a3a] rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-[#f7931a] rounded-full"
-                                                    style={{ width: `${row['Cumulative %']}%` }}
+                                                    style={{ width: `${row.cumPct}%` }}
                                                 />
                                             </div>
-                                            <span className="text-[#e4e4ec] text-xs w-10 text-right">{row['Cumulative %']}%</span>
+                                            <span className="text-[#e4e4ec] text-xs w-10 text-right">{row.cumPct}%</span>
                                         </div>
                                     </td>
                                 </tr>
