@@ -156,7 +156,7 @@ export function UserDashboard(): React.JSX.Element {
     const tabs: { key: DashTab; label: string; count: number }[] = [
         { key: 'created', label: 'Markets', count: myCreated.length },
         { key: 'bets', label: 'My Bets', count: myBets.length },
-        { key: 'oracle', label: 'Oracle', count: myOracle.length },
+        { key: 'oracle', label: 'Oracle Duties', count: myOracle.length },
         { key: 'claims', label: 'Claims', count: totalClaims },
     ];
 
