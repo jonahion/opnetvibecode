@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useTheme } from '../../hooks/useTheme';
 import { OverviewAnalytics } from './OverviewAnalytics';
 import { MarketsAnalytics } from './MarketsAnalytics';
 import { TrendsAnalytics } from './TrendsAnalytics';
@@ -23,6 +24,8 @@ export function AnalyticsPage(): React.JSX.Element {
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = (searchParams.get('tab') as Tab) || 'overview';
     const { data, loading, error, refresh } = useAnalytics();
+    const { theme } = useTheme();
+    const colorScheme = theme === 'dark' ? '[color-scheme:dark]' : '[color-scheme:light]';
     const [search, setSearch] = useState('');
     const [blockRange, setBlockRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
     const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
@@ -109,14 +112,14 @@ export function AnalyticsPage(): React.JSX.Element {
                         type="date"
                         value={dateRange.from}
                         onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
-                        className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors [color-scheme:dark]"
+                        className={`bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors ${colorScheme}`}
                     />
                     <span className="text-[var(--color-text-muted)]">-</span>
                     <input
                         type="date"
                         value={dateRange.to}
                         onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
-                        className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors [color-scheme:dark]"
+                        className={`bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors ${colorScheme}`}
                     />
                 </div>
                 {hasFilters && (
