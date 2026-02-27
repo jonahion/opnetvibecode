@@ -13,11 +13,6 @@ function formatSats(sats: bigint): string {
     return `${sats.toLocaleString()} sats`;
 }
 
-function truncateAddress(addr: string): string {
-    if (addr.length <= 14) return addr;
-    return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
-}
-
 function truncateId(id: string): string {
     if (id.length <= 16) return id;
     return `${id.slice(0, 8)}...${id.slice(-8)}`;
@@ -158,7 +153,18 @@ export function MarketDetail(): React.JSX.Element {
     const noPercent = totalPool > 0n ? 100 - yesPercent : 50;
     const isOpen = market.status === MarketStatus.OPEN;
     const isResolved = market.status === MarketStatus.RESOLVED;
-    const isOracle = callerAddress !== null && market.oracle.toLowerCase() === callerAddress.toLowerCase();
+    // Convert wallet address (Uint8Array with custom toString, or string) to lowercase hex
+    const normalize = (v: unknown): string => {
+        if (!v) return '';
+        if (v instanceof Uint8Array) {
+            return Array.from(v).map((b) => b.toString(16).padStart(2, '0')).join('');
+        }
+        return String(v).toLowerCase().replace(/^0x/, '');
+    };
+    const oracleHex = normalize(market.oracle).replace(/^0+/, '');
+    const callerHex = normalize(callerAddress).replace(/^0+/, '');
+    const walletHex = normalize(address).replace(/^0+/, '');
+    const isOracle = (callerHex !== '' && oracleHex === callerHex) || (walletHex !== '' && oracleHex === walletHex);
     const deadlineReached = currentBlock !== null && currentBlock >= market.endBlock;
 
     return (
@@ -220,7 +226,15 @@ export function MarketDetail(): React.JSX.Element {
                 )}
             </Card>
 
-            {isOpen && address && (
+            {isOpen && deadlineReached && (
+                <Card>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
+                        Betting is closed — the deadline (block #{market.endBlock.toLocaleString()}) has passed. Awaiting oracle resolution.
+                    </p>
+                </Card>
+            )}
+
+            {isOpen && address && !deadlineReached && (
                 <Card>
                     <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Place Your Bet</h2>
                     <div className="mb-4">
@@ -352,7 +366,15 @@ export function MarketDetail(): React.JSX.Element {
             {isOpen && (
                 <Card>
                     <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Oracle Resolution</h2>
-                    {isOracle ? (
+                    {!address ? (
+                        <div className="text-sm text-[var(--color-text-secondary)]">
+                            <p className="mb-3">Connect your wallet to check if you are the oracle for this market.</p>
+                            <div className="bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded-lg px-4 py-3">
+                                <span className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Oracle Address</span>
+                                <span className="text-[var(--color-text-primary)] font-mono text-sm break-all">{market.oracle}</span>
+                            </div>
+                        </div>
+                    ) : isOracle ? (
                         <>
                             {!deadlineReached ? (
                                 <p className="text-sm text-[var(--color-text-secondary)] mb-4">
@@ -401,7 +423,7 @@ export function MarketDetail(): React.JSX.Element {
                             </p>
                             <div className="bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded-lg px-4 py-3">
                                 <span className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Oracle Address</span>
-                                <span className="text-[var(--color-text-primary)] font-mono text-sm break-all">{truncateAddress(market.oracle)}</span>
+                                <span className="text-[var(--color-text-primary)] font-mono text-sm break-all">{market.oracle}</span>
                             </div>
                             {currentBlock !== null && !deadlineReached && (
                                 <p className="mt-3 text-[var(--color-text-muted)] text-xs">

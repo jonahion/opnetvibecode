@@ -105,14 +105,17 @@ function createProvider(network: typeof networks.bitcoin): JSONRpcProvider {
 function createContract(
     contractAddress: string,
     network: typeof networks.bitcoin,
+    sender?: Address,
 ): AnyContract {
     const provider = createProvider(network);
-    return getContract<BaseContractProperties>(
+    const contract = getContract<BaseContractProperties>(
         contractAddress,
         PREDICTION_MARKET_ABI as BitcoinInterfaceAbi,
         provider,
         network,
+        sender,
     ) as unknown as AnyContract;
+    return contract;
 }
 
 export type PendingTxType = 'createMarket' | 'placeBet' | 'resolveMarket' | 'claimWinnings' | 'unknown';
@@ -204,6 +207,8 @@ export function usePredictionMarket(): {
     const [error, setError] = useState<string | null>(null);
 
     const contractAddress = 'opt1sqr39k8n70qaukcwz2cr8jvulj3tjp28j7ghahs9q';
+
+
 
     const fetchMarketCount = useCallback(async (): Promise<bigint> => {
         const contract = createContract(contractAddress, network);
@@ -373,7 +378,27 @@ export function usePredictionMarket(): {
         setError(null);
         try {
             if (!address) throw new Error('Wallet not connected');
-            const contract = createContract(contractAddress, network);
+
+            // Build a full Address with legacy public key so the simulation
+            // knows the real tx.sender (needed for oracle identity check).
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const opwallet = (window as any).opnet;
+            let sender: Address | undefined;
+            if (opwallet) {
+                try {
+                    const [pubKey, mldsaPubKey] = await Promise.all([
+                        opwallet.getPublicKey() as Promise<string>,
+                        opwallet.getMLDSAPublicKey() as Promise<string>,
+                    ]);
+                    if (mldsaPubKey && pubKey) {
+                        sender = Address.fromString(mldsaPubKey, pubKey);
+                    }
+                } catch {
+                    // best-effort; proceed without sender
+                }
+            }
+
+            const contract = createContract(contractAddress, network, sender);
             const sim = await contract.resolveMarket(marketId, BigInt(outcome));
             if (sim.revert) throw new Error(`Resolve market failed: ${String(sim.revert)}`);
 
