@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { usePredictionMarket } from '../../hooks/usePredictionMarket';
 import type { PendingTx } from '../../hooks/usePredictionMarket';
 import { MarketCard } from './MarketCard';
-import { MarketData, MarketStatus } from '../../types';
+import { MarketData, MarketStatus, MarketCategory } from '../../types';
 import { Card } from '../common/Card';
+import { getMarketMetadata } from '../../utils/marketQuestions';
 
 const PAGE_SIZE = 10;
 
@@ -146,6 +147,27 @@ export function MarketList(): React.JSX.Element {
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+    // Group paged markets by category
+    const grouped = useMemo(() => {
+        const groups: { category: MarketCategory | 'other'; label: string; markets: MarketData[] }[] = [];
+        const buckets = new Map<string, MarketData[]>();
+        for (const m of paged) {
+            const meta = getMarketMetadata(m.id);
+            const cat = meta?.category ?? 'other';
+            if (!buckets.has(cat)) buckets.set(cat, []);
+            buckets.get(cat)!.push(m);
+        }
+        const categoryLabels: Record<string, string> = { price: 'Price Predictions', event: 'Event Predictions', other: 'Other' };
+        const order: string[] = ['price', 'event', 'other'];
+        for (const key of order) {
+            const list = buckets.get(key);
+            if (list && list.length > 0) {
+                groups.push({ category: key as MarketCategory | 'other', label: categoryLabels[key], markets: list });
+            }
+        }
+        return groups;
+    }, [paged]);
+
     // Reset page when search or tab changes
     useEffect(() => {
         setPage(1);
@@ -283,16 +305,36 @@ export function MarketList(): React.JSX.Element {
                         </div>
                     )}
 
-                    {/* Market grid */}
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {paged.map((market) => (
-                            <MarketCard
-                                key={market.id.toString()}
-                                market={market}
-                                isAwaitingResolution={tab === 'awaiting'}
-                            />
-                        ))}
-                    </div>
+                    {/* Market grid grouped by category */}
+                    {grouped.map((group) => (
+                        <div key={group.category} className="mb-6 last:mb-0">
+                            {grouped.length > 1 && (
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                                        group.category === 'price'
+                                            ? 'text-[var(--color-btc-orange)] bg-[var(--color-btc-orange)]/10'
+                                            : group.category === 'event'
+                                                ? 'text-purple-400 bg-purple-400/10'
+                                                : 'text-[var(--color-text-secondary)] bg-[var(--color-text-secondary)]/10'
+                                    }`}>
+                                        {group.label}
+                                    </span>
+                                    <span className="text-xs text-[var(--color-text-muted)]">
+                                        {group.markets.length}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {group.markets.map((market) => (
+                                    <MarketCard
+                                        key={market.id.toString()}
+                                        market={market}
+                                        isAwaitingResolution={tab === 'awaiting'}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
 
                     {/* Pagination */}
                     {totalPages > 1 && (

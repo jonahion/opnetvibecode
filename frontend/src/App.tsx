@@ -5,6 +5,7 @@ import { MarketList } from './components/market/MarketList';
 import { MarketDetail } from './components/market/MarketDetail';
 import { CreateMarketForm } from './components/market/CreateMarketForm';
 import { AnalyticsPage } from './components/analytics/AnalyticsPage';
+import { UserDashboard } from './components/dashboard/UserDashboard';
 import { ThemeToggle } from './components/common/ThemeToggle';
 import { bootMarketQuestions } from './utils/marketQuestions';
 import { bootCoinList } from './utils/coinList';
@@ -44,15 +45,17 @@ export function App(): React.JSX.Element {
                         </nav>
                     </div>
                     <div className="flex items-center gap-3">
-                        <ThemeToggle />
+                        <NavLink to="/dashboard" label="My Dashboard" />
                         <WalletButton />
+                        <ThemeToggle />
                     </div>
                 </div>
             </header>
 
             <main className="max-w-6xl mx-auto px-4 py-8">
                 <Routes>
-                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/" element={<MarketsPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/create" element={<CreateMarketForm />} />
                     <Route path="/market/:id" element={<MarketDetail />} />
                     <Route path="/analytics" element={<AnalyticsPage />} />
@@ -68,7 +71,7 @@ export function App(): React.JSX.Element {
     );
 }
 
-function DashboardPage(): React.JSX.Element {
+function MarketsPage(): React.JSX.Element {
     return (
         <div>
             <div className="flex items-center justify-between mb-8">
@@ -84,6 +87,20 @@ function DashboardPage(): React.JSX.Element {
                 </Link>
             </div>
             <MarketList />
+        </div>
+    );
+}
+
+function DashboardPage(): React.JSX.Element {
+    return (
+        <div>
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Dashboard</h1>
+                    <p className="text-[var(--color-text-secondary)] mt-1">Your markets, bets, and winnings at a glance.</p>
+                </div>
+            </div>
+            <UserDashboard />
         </div>
     );
 }

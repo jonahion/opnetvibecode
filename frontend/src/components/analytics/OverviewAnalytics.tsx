@@ -23,9 +23,11 @@ function formatSats(sats: bigint): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltip({ active, payload, label }: any): React.JSX.Element | null {
     if (!active || !payload?.length) return null;
+    const question = payload[0]?.payload?.question as string | undefined;
     return (
-        <div className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs">
+        <div className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs max-w-[280px]">
             <p className="text-[var(--color-text-primary)] font-medium mb-1">{label}</p>
+            {question && <p className="text-[var(--color-text-secondary)] mb-1 break-words">{question}</p>}
             {payload.map((p: { name: string; value: number; color: string }, i: number) => (
                 <p key={i} style={{ color: p.color }}>
                     {p.name}: {p.value.toLocaleString()} sats
@@ -57,6 +59,7 @@ export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props
             cumulative += Number(m.totalPool);
             return {
                 name: `#${m.id}`,
+                question: m.question,
                 TVL: cumulative,
             };
         });
@@ -71,6 +74,7 @@ export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props
             cumNo += Number(m.noPool);
             return {
                 name: `#${m.id}`,
+                question: m.question,
                 'YES Locked': cumYes,
                 'NO Locked': cumNo,
             };
@@ -80,6 +84,7 @@ export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props
     // Per-market TVL bar
     const perMarketTvl = filtered.map((m) => ({
         name: `#${m.id}`,
+        question: m.question,
         YES: Number(m.yesPool),
         NO: Number(m.noPool),
     }));

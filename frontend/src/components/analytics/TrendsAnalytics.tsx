@@ -19,9 +19,11 @@ interface Props {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ChartTooltip({ active, payload, label }: any): React.JSX.Element | null {
     if (!active || !payload?.length) return null;
+    const question = payload[0]?.payload?.question as string | undefined;
     return (
-        <div className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs">
+        <div className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs max-w-[280px]">
             <p className="text-[var(--color-text-primary)] font-medium mb-1">{label}</p>
+            {question && <p className="text-[var(--color-text-secondary)] mb-1 break-words">{question}</p>}
             {payload.map((p: { name: string; value: number; color: string }, i: number) => (
                 <p key={i} style={{ color: p.color }}>
                     {p.name}: {p.value.toLocaleString()} sats
@@ -45,6 +47,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
             cumNo += Number(m.noPool);
             return {
                 name: `#${m.id}`,
+                question: m.question,
                 'Cumulative YES': cumYes,
                 'Cumulative NO': cumNo,
                 'Cumulative Total': cumYes + cumNo,
@@ -55,6 +58,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
     // YES vs NO ratio per market
     const ratioData = filtered.map((m) => ({
         name: `#${m.id}`,
+        question: m.question,
         'YES %': m.yesPercent,
         'NO %': m.noPercent,
     }));
@@ -62,12 +66,14 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
     // Pool size per market (bar)
     const poolSizes = filtered.map((m) => ({
         name: `#${m.id}`,
+        question: m.question,
         Pool: Number(m.totalPool),
     }));
 
     // Market duration (endBlock spread)
     const durationData = filtered.map((m) => ({
         name: `#${m.id}`,
+        question: m.question,
         'End Block': Number(m.endBlock),
     }));
 
@@ -139,10 +145,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                             <LineChart data={ratioData}>
                                 <XAxis dataKey="name" tick={{ fill: '#8888a0', fontSize: 11 }} axisLine={{ stroke: '#2a2a3a' }} />
                                 <YAxis domain={[0, 100]} tick={{ fill: '#8888a0', fontSize: 11 }} axisLine={{ stroke: '#2a2a3a' }} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1a1a2a', border: '1px solid #2a2a3a', borderRadius: 8, fontSize: 12 }}
-                                    itemStyle={{ color: '#e4e4ec' }}
-                                />
+                                <Tooltip content={<ChartTooltip />} />
                                 <Line type="monotone" dataKey="YES %" stroke="#22c55e" strokeWidth={2} dot={{ fill: '#22c55e', r: 4 }} />
                                 <Line type="monotone" dataKey="NO %" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444', r: 4 }} />
                             </LineChart>
@@ -211,10 +214,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                             <BarChart data={durationData}>
                                 <XAxis dataKey="name" tick={{ fill: '#8888a0', fontSize: 11 }} axisLine={{ stroke: '#2a2a3a' }} />
                                 <YAxis tick={{ fill: '#8888a0', fontSize: 11 }} axisLine={{ stroke: '#2a2a3a' }} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1a1a2a', border: '1px solid #2a2a3a', borderRadius: 8, fontSize: 12 }}
-                                    itemStyle={{ color: '#e4e4ec' }}
-                                />
+                                <Tooltip content={<ChartTooltip />} />
                                 <Bar dataKey="End Block" fill="#8888a0" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
