@@ -1,0 +1,4 @@
+.vercel
+
+# TypeScript compiled output
+src/**/*.js
