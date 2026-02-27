@@ -4,6 +4,7 @@ import { MarketData, MarketStatus } from '../../types';
 
 interface MarketCardProps {
     market: MarketData;
+    isAwaitingResolution?: boolean;
 }
 
 function formatSats(sats: bigint): string {
@@ -12,25 +13,28 @@ function formatSats(sats: bigint): string {
     return `${sats.toLocaleString()} sats`;
 }
 
-function getStatusLabel(status: MarketStatus): { text: string; color: string } {
+function getStatusLabel(status: MarketStatus, isAwaitingResolution?: boolean): { text: string; color: string } {
+    if (isAwaitingResolution) {
+        return { text: 'AWAITING RESOLUTION', color: 'text-[var(--color-btc-orange)] bg-[var(--color-btc-orange)]/10' };
+    }
     switch (status) {
         case MarketStatus.OPEN:
             return { text: 'LIVE', color: 'text-green-400 bg-green-400/10' };
         case MarketStatus.RESOLVED:
-            return { text: 'RESOLVED', color: 'text-[#8888a0] bg-[#8888a0]/10' };
+            return { text: 'RESOLVED', color: 'text-[var(--color-text-secondary)] bg-[var(--color-text-secondary)]/10' };
         default:
-            return { text: 'UNKNOWN', color: 'text-[#8888a0] bg-[#8888a0]/10' };
+            return { text: 'UNKNOWN', color: 'text-[var(--color-text-secondary)] bg-[var(--color-text-secondary)]/10' };
     }
 }
 
-export function MarketCard({ market }: MarketCardProps): React.JSX.Element {
+export function MarketCard({ market, isAwaitingResolution }: MarketCardProps): React.JSX.Element {
     const navigate = useNavigate();
     const totalPool = market.yesPool + market.noPool;
     const yesPercent = totalPool > 0n
         ? Number((market.yesPool * 10000n) / totalPool) / 100
         : 50;
     const noPercent = totalPool > 0n ? 100 - yesPercent : 50;
-    const status = getStatusLabel(market.status);
+    const status = getStatusLabel(market.status, isAwaitingResolution);
 
     return (
         <Card
@@ -39,7 +43,7 @@ export function MarketCard({ market }: MarketCardProps): React.JSX.Element {
             className="group"
         >
             <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-semibold text-[#e4e4ec] group-hover:text-[#f7931a] transition-colors leading-snug flex-1 mr-3">
+                <h3 className="text-lg font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-btc-orange)] transition-colors leading-snug flex-1 mr-3">
                     {market.question}
                 </h3>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${status.color}`}>
@@ -60,7 +64,7 @@ export function MarketCard({ market }: MarketCardProps): React.JSX.Element {
                 </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm text-[#8888a0]">
+            <div className="flex items-center justify-between text-sm text-[var(--color-text-secondary)]">
                 <span>Pool: {formatSats(totalPool)}</span>
                 <span>Ends block #{market.endBlock.toLocaleString()}</span>
             </div>

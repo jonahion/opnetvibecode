@@ -117,6 +117,16 @@ export type GetOwnerView = CallResult<
     OPNetEvent<never>[]
 >;
 
+/**
+ * @description Represents the result of the getCallerAddressView function call.
+ */
+export type GetCallerAddressView = CallResult<
+    {
+        callerAddress: bigint;
+    },
+    OPNetEvent<never>[]
+>;
+
 // ------------------------------------------------------------------
 // IPredictionMarket
 // ------------------------------------------------------------------
@@ -129,4 +139,5 @@ export interface IPredictionMarket extends IOP_NETContract {
     getUserPosition(marketId: bigint, user: Address): Promise<GetUserPosition>;
     getMarketCountView(): Promise<GetMarketCountView>;
     getOwnerView(): Promise<GetOwnerView>;
+    getCallerAddressView(): Promise<GetCallerAddressView>;
 }

@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useWalletConnect } from '@btc-vision/walletconnect';
 import { networks } from '@btc-vision/bitcoin';
-import { Address } from '@btc-vision/transaction';
-import { JSONRpcProvider, getContract, BaseContractProperties } from 'opnet';
+import { Address, ABICoder } from '@btc-vision/transaction';
+import { JSONRpcProvider, getContract, BaseContractProperties, ABIDataTypes } from 'opnet';
 import type { BitcoinInterfaceAbi } from 'opnet';
 import { useNetwork } from './useNetwork';
 import { getNetworkConfig } from '../config';
@@ -60,6 +60,18 @@ function hexToAddress(hex: string): Address {
     return Address.wrap(bytes);
 }
 
+/** Convert a u256 value (decimal or BigInt) back to a 0x-prefixed hex address string. */
+function u256ToHex(value: unknown): string {
+    try {
+        const n = BigInt(String(value));
+        return '0x' + n.toString(16).padStart(64, '0');
+    } catch {
+        // If it's already hex-like, return as-is
+        const s = String(value);
+        return s.startsWith('0x') ? s : '0x' + s;
+    }
+}
+
 function createProvider(network: typeof networks.bitcoin): JSONRpcProvider {
     const config = getNetworkConfig(network);
     const provider = new JSONRpcProvider({ url: config.rpcUrl, network });
@@ -103,12 +115,84 @@ function createContract(
     ) as unknown as AnyContract;
 }
 
+export type PendingTxType = 'createMarket' | 'placeBet' | 'resolveMarket' | 'claimWinnings' | 'unknown';
+
+export interface PendingTx {
+    txId: string;
+    from: string;
+    firstSeen: Date;
+    /** Decoded function name if recognized. */
+    txType: PendingTxType;
+    /** Question string from createMarket calls. */
+    question?: string;
+    /** Market ID from placeBet / resolveMarket / claimWinnings calls. */
+    marketId?: bigint;
+    /** Bet outcome from placeBet calls (1=YES, 2=NO). */
+    betOutcome?: number;
+    /** Bet amount from placeBet calls. */
+    betAmount?: bigint;
+}
+
+/** Pre-compute function selectors (SHA256 first 4 bytes of canonical signature). */
+const abiCoder = new ABICoder();
+const SELECTOR_CREATE_MARKET = abiCoder.encodeSelector('createMarket(string,uint64,address)');
+const SELECTOR_PLACE_BET = abiCoder.encodeSelector('placeBet(uint256,uint256,uint256)');
+const SELECTOR_RESOLVE_MARKET = abiCoder.encodeSelector('resolveMarket(uint256,uint256)');
+const SELECTOR_CLAIM_WINNINGS = abiCoder.encodeSelector('claimWinnings(uint256)');
+
+function calldataSelector(calldata: Uint8Array): string {
+    return Array.from(calldata.subarray(0, 4)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+interface DecodedCalldata {
+    txType: PendingTxType;
+    question?: string;
+    marketId?: bigint;
+    betOutcome?: number;
+    betAmount?: bigint;
+}
+
+function decodePendingCalldata(calldata: Uint8Array): DecodedCalldata {
+    if (calldata.length < 4) return { txType: 'unknown' };
+    const sel = calldataSelector(calldata);
+    const params = calldata.subarray(4);
+    try {
+        if (sel === SELECTOR_CREATE_MARKET) {
+            const decoded = abiCoder.decodeData(params, [ABIDataTypes.STRING, ABIDataTypes.UINT64, ABIDataTypes.ADDRESS]);
+            return { txType: 'createMarket', question: decoded[0] as string };
+        }
+        if (sel === SELECTOR_PLACE_BET) {
+            const decoded = abiCoder.decodeData(params, [ABIDataTypes.UINT256, ABIDataTypes.UINT256, ABIDataTypes.UINT256]);
+            return {
+                txType: 'placeBet',
+                marketId: decoded[0] as bigint,
+                betOutcome: Number(decoded[1] as bigint),
+                betAmount: decoded[2] as bigint,
+            };
+        }
+        if (sel === SELECTOR_RESOLVE_MARKET) {
+            const decoded = abiCoder.decodeData(params, [ABIDataTypes.UINT256, ABIDataTypes.UINT256]);
+            return { txType: 'resolveMarket', marketId: decoded[0] as bigint };
+        }
+        if (sel === SELECTOR_CLAIM_WINNINGS) {
+            const decoded = abiCoder.decodeData(params, [ABIDataTypes.UINT256]);
+            return { txType: 'claimWinnings', marketId: decoded[0] as bigint };
+        }
+    } catch {
+        // decoding failed — return unknown
+    }
+    return { txType: 'unknown' };
+}
+
 export function usePredictionMarket(): {
     loading: boolean;
     error: string | null;
     fetchMarketCount: () => Promise<bigint>;
     fetchMarket: (marketId: bigint) => Promise<MarketData>;
     fetchUserPosition: (marketId: bigint) => Promise<UserPosition>;
+    fetchCurrentBlock: () => Promise<bigint>;
+    fetchCallerAddress: () => Promise<string>;
+    fetchPendingTxs: () => Promise<PendingTx[]>;
     createMarket: (question: string, endBlock: bigint, oracle: string, metadata?: MarketMetadata) => Promise<void>;
     placeBet: (marketId: bigint, outcome: MarketOutcome, amount: bigint) => Promise<void>;
     resolveMarket: (marketId: bigint, outcome: MarketOutcome) => Promise<void>;
@@ -119,7 +203,7 @@ export function usePredictionMarket(): {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const contractAddress = 'opt1sqp68ve9ztlmjl63fk43sspzln2u0ew4auuuctw3h';
+    const contractAddress = 'opt1sqr39k8n70qaukcwz2cr8jvulj3tjp28j7ghahs9q';
 
     const fetchMarketCount = useCallback(async (): Promise<bigint> => {
         const contract = createContract(contractAddress, network);
@@ -136,9 +220,9 @@ export function usePredictionMarket(): {
         const props = result.properties;
         return {
             id: marketId,
-            creator: String(props.creator),
+            creator: u256ToHex(props.creator),
             endBlock: props.endBlock as bigint,
-            oracle: String(props.oracle),
+            oracle: u256ToHex(props.oracle),
             status: Number(props.status) as MarketStatus,
             outcome: Number(props.outcome) as MarketOutcome,
             yesPool: props.yesPool as bigint,
@@ -161,6 +245,47 @@ export function usePredictionMarket(): {
         };
     }, [network, address, contractAddress]);
 
+    const fetchCurrentBlock = useCallback(async (): Promise<bigint> => {
+        const provider = createProvider(network);
+        const blockNumber = await provider.getBlockNumber();
+        return BigInt(blockNumber);
+    }, [network]);
+
+    /** Returns the connected wallet's tx.sender address as a hex string (0x-prefixed). */
+    const fetchCallerAddress = useCallback(async (): Promise<string> => {
+        const contract = createContract(contractAddress, network);
+        const result = await contract.getCallerAddressView();
+        if (result.revert) throw new Error('Failed to fetch caller address');
+        return u256ToHex(result.properties.callerAddress);
+    }, [network, contractAddress]);
+
+    /** Fetch pending (unconfirmed) transactions targeting our contract from the mempool. */
+    const fetchPendingTxs = useCallback(async (): Promise<PendingTx[]> => {
+        try {
+            const provider = createProvider(network);
+            const txs = await provider.getLatestPendingTransactions({ limit: 50 });
+            const pending: PendingTx[] = [];
+            for (const tx of txs) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const opnetTx = tx as any;
+                if (opnetTx.contractAddress && opnetTx.contractAddress === contractAddress) {
+                    const decoded = opnetTx.calldata instanceof Uint8Array
+                        ? decodePendingCalldata(opnetTx.calldata)
+                        : { txType: 'unknown' as PendingTxType };
+                    pending.push({
+                        txId: tx.id,
+                        from: opnetTx.from ?? '',
+                        firstSeen: tx.firstSeen,
+                        ...decoded,
+                    });
+                }
+            }
+            return pending;
+        } catch {
+            return [];
+        }
+    }, [network, contractAddress]);
+
     const createMarket = useCallback(async (
         question: string,
         blocksFromNow: bigint,
@@ -176,7 +301,8 @@ export function usePredictionMarket(): {
             const endBlock = BigInt(currentBlock) + blocksFromNow;
 
             const contract = createContract(contractAddress, network);
-            const oracleAddr = hexToAddress(oracle);
+            // Empty oracle → send zero address so contract uses tx.sender
+            const oracleAddr = oracle ? hexToAddress(oracle) : Address.wrap(new Uint8Array(32));
             const sim = await contract.createMarket(question, endBlock, oracleAddr);
             if (sim.revert) throw new Error(`Create market failed: ${String(sim.revert)}`);
 
@@ -298,6 +424,9 @@ export function usePredictionMarket(): {
         fetchMarketCount,
         fetchMarket,
         fetchUserPosition,
+        fetchCurrentBlock,
+        fetchCallerAddress,
+        fetchPendingTxs,
         createMarket,
         placeBet,
         resolveMarket,

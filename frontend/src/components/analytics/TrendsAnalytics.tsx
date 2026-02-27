@@ -20,8 +20,8 @@ interface Props {
 function ChartTooltip({ active, payload, label }: any): React.JSX.Element | null {
     if (!active || !payload?.length) return null;
     return (
-        <div className="bg-[#1a1a2a] border border-[#2a2a3a] rounded-lg px-3 py-2 text-xs">
-            <p className="text-[#e4e4ec] font-medium mb-1">{label}</p>
+        <div className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs">
+            <p className="text-[var(--color-text-primary)] font-medium mb-1">{label}</p>
             {payload.map((p: { name: string; value: number; color: string }, i: number) => (
                 <p key={i} style={{ color: p.color }}>
                     {p.name}: {p.value.toLocaleString()} sats
@@ -80,23 +80,23 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
         <div className="space-y-6">
             {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Filtered Markets</p>
-                    <p className="text-xl font-bold text-[#f7931a]">{filtered.length}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Filtered Markets</p>
+                    <p className="text-xl font-bold text-[var(--color-btc-orange)]">{filtered.length}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Filtered Volume</p>
-                    <p className="text-xl font-bold text-[#e4e4ec]">{totalFiltered.toLocaleString()} sats</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Filtered Volume</p>
+                    <p className="text-xl font-bold text-[var(--color-text-primary)]">{totalFiltered.toLocaleString()} sats</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Avg YES Bias</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Avg YES Bias</p>
                     <p className={`text-xl font-bold ${avgYesBias >= 50 ? 'text-green-400' : 'text-red-400'}`}>
                         {avgYesBias.toFixed(1)}%
                     </p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Outcome Ratio</p>
-                    <p className="text-xl font-bold text-[#e4e4ec]">
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Outcome Ratio</p>
+                    <p className="text-xl font-bold text-[var(--color-text-primary)]">
                         {data.overview.resolvedYes}Y / {data.overview.resolvedNo}N
                     </p>
                 </div>
@@ -104,7 +104,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
 
             {/* Cumulative volume area chart */}
             <Card>
-                <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Cumulative Volume</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Cumulative Volume</h3>
                 {cumulativeVolume.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
                         <AreaChart data={cumulativeVolume}>
@@ -126,14 +126,14 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                         </AreaChart>
                     </ResponsiveContainer>
                 ) : (
-                    <p className="text-[#555] text-sm text-center py-10">No data to display</p>
+                    <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data to display</p>
                 )}
             </Card>
 
             <div className="grid md:grid-cols-2 gap-6">
                 {/* YES/NO ratio line chart */}
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">YES/NO Ratio per Market</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">YES/NO Ratio per Market</h3>
                     {ratioData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <LineChart data={ratioData}>
@@ -148,13 +148,13 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                             </LineChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
 
                 {/* Pool sizes bar chart */}
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Pool Size per Market</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Pool Size per Market</h3>
                     {poolSizes.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart data={poolSizes}>
@@ -165,7 +165,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                             </BarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
             </div>
@@ -173,7 +173,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
             {/* Outcome distribution pie + end block timeline */}
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Outcome Distribution</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Outcome Distribution</h3>
                     {data.outcomeDistribution.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
@@ -191,7 +191,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                                     ))}
                                 </Pie>
                                 <Legend
-                                    formatter={(value: string) => <span className="text-[#8888a0] text-xs">{value}</span>}
+                                    formatter={(value: string) => <span className="text-[var(--color-text-secondary)] text-xs">{value}</span>}
                                 />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#1a1a2a', border: '1px solid #2a2a3a', borderRadius: 8, fontSize: 12 }}
@@ -200,12 +200,12 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                             </PieChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
 
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Market End Blocks</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Market End Blocks</h3>
                     {durationData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart data={durationData}>
@@ -219,7 +219,7 @@ export function TrendsAnalytics({ data, search, blockRange, dateRange }: Props):
                             </BarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
             </div>

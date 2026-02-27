@@ -28,9 +28,12 @@ export interface UserPosition {
     claimed: boolean;
 }
 
+export type MarketCategory = 'price' | 'event';
+
 export interface MarketMetadata {
-    coin: string;
-    targetPrice: number;
+    category: MarketCategory;
+    coin?: string;
+    targetPrice?: number;
     deadline: string; // ISO date string
 }
 

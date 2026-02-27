@@ -10,6 +10,7 @@ import { AnalyticsData, MarketAnalytics } from '../../hooks/useAnalytics';
 import { MarketStatus } from '../../types';
 import { filterMarkets } from '../../utils/filterMarkets';
 import { getAllMarketMetadata } from '../../utils/marketQuestions';
+import { searchCoins } from '../../utils/coinList';
 
 interface Props {
     data: AnalyticsData;
@@ -17,13 +18,6 @@ interface Props {
     blockRange: { from: string; to: string };
     dateRange: { from: string; to: string };
 }
-
-// Common coins in crypto prediction markets
-const COIN_SUGGESTIONS = [
-    'BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'MATIC', 'LINK',
-    'UNI', 'ATOM', 'LTC', 'BCH', 'NEAR', 'APT', 'ARB', 'OP', 'SUI', 'SEI',
-    'TIA', 'INJ', 'FET', 'RNDR', 'STX', 'RUNE', 'PEPE', 'WIF', 'BONK',
-];
 
 function formatSats(sats: bigint | number): string {
     const n = typeof sats === 'bigint' ? Number(sats) : sats;
@@ -36,8 +30,8 @@ function formatSats(sats: bigint | number): string {
 function ChartTooltip({ active, payload, label }: any): React.JSX.Element | null {
     if (!active || !payload?.length) return null;
     return (
-        <div className="bg-[#1a1a2a] border border-[#2a2a3a] rounded-lg px-3 py-2 text-xs">
-            <p className="text-[#e4e4ec] font-medium mb-1">{label}</p>
+        <div className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs">
+            <p className="text-[var(--color-text-primary)] font-medium mb-1">{label}</p>
             {payload.map((p: { name: string; value: number; color: string }, i: number) => (
                 <p key={i} style={{ color: p.color }}>
                     {p.name}: {formatSats(p.value)}
@@ -66,9 +60,7 @@ function TreemapContent({ x, y, width, height, name, value }: any): React.JSX.El
 function CoinFilter({ value, onChange }: { value: string; onChange: (v: string) => void }): React.JSX.Element {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
-    const suggestions = COIN_SUGGESTIONS.filter(
-        (c) => !value || c.toLowerCase().includes(value.toLowerCase()),
-    ).slice(0, 8);
+    const suggestions = searchCoins(value, 8);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -86,17 +78,18 @@ function CoinFilter({ value, onChange }: { value: string; onChange: (v: string) 
                 onChange={(e) => { onChange(e.target.value); setOpen(true); }}
                 onFocus={() => setOpen(true)}
                 placeholder="Filter by coin (e.g. BTC, ETH)..."
-                className="w-full bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-2.5 text-sm text-[#e4e4ec] placeholder-[#555] focus:border-[#f7931a] focus:outline-none transition-colors"
+                className="w-full bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors"
             />
             {open && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a2a] border border-[#2a2a3a] rounded-xl overflow-hidden z-10 shadow-lg">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-xl overflow-hidden z-10 shadow-lg max-h-64 overflow-y-auto">
                     {suggestions.map((coin) => (
                         <button
-                            key={coin}
-                            onClick={() => { onChange(coin); setOpen(false); }}
-                            className="w-full text-left px-4 py-2 text-sm text-[#e4e4ec] hover:bg-[#f7931a]/10 hover:text-[#f7931a] transition-colors cursor-pointer"
+                            key={coin.symbol}
+                            onClick={() => { onChange(coin.symbol); setOpen(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-btc-orange)]/10 hover:text-[var(--color-btc-orange)] transition-colors cursor-pointer flex items-center justify-between"
                         >
-                            {coin}
+                            <span className="font-medium">{coin.symbol}</span>
+                            <span className="text-xs text-[var(--color-text-muted)]">{coin.name}</span>
                         </button>
                     ))}
                 </div>
@@ -112,13 +105,17 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
 
     const filtered = useMemo((): MarketAnalytics[] => {
         let markets = filterMarkets({ markets: data.markets, search, blockRange, dateRange });
-        // Filter by coin: prefer structured metadata, fall back to question text
+        // Only show price prediction markets (those with coin metadata)
+        markets = markets.filter((m) => {
+            const meta = metadataMap.get(m.id.toString());
+            return meta?.coin;
+        });
+        // Additional coin filter
         if (coinFilter) {
             const q = coinFilter.toUpperCase();
             markets = markets.filter((m) => {
                 const meta = metadataMap.get(m.id.toString());
-                if (meta?.coin) return meta.coin.toUpperCase() === q;
-                return m.question.toUpperCase().includes(q);
+                return meta?.coin?.toUpperCase() === q;
             });
         }
         return markets;
@@ -215,35 +212,35 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
 
             {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Total Sats</p>
-                    <p className="text-xl font-bold text-[#f7931a]">{formatSats(totalSats)}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Total Sats</p>
+                    <p className="text-xl font-bold text-[var(--color-btc-orange)]">{formatSats(totalSats)}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">YES Pool</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">YES Pool</p>
                     <p className="text-xl font-bold text-green-400">{formatSats(totalYes)}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">NO Pool</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">NO Pool</p>
                     <p className="text-xl font-bold text-red-400">{formatSats(totalNo)}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Locked (Open)</p>
-                    <p className="text-xl font-bold text-[#f7931a]">{formatSats(openSats)}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Locked (Open)</p>
+                    <p className="text-xl font-bold text-[var(--color-btc-orange)]">{formatSats(openSats)}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Settled</p>
-                    <p className="text-xl font-bold text-[#8888a0]">{formatSats(resolvedSats)}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Settled</p>
+                    <p className="text-xl font-bold text-[var(--color-text-secondary)]">{formatSats(resolvedSats)}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Avg Pool</p>
-                    <p className="text-xl font-bold text-[#e4e4ec]">{formatSats(avgBetSize)}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Avg Pool</p>
+                    <p className="text-xl font-bold text-[var(--color-text-primary)]">{formatSats(avgBetSize)}</p>
                 </div>
             </div>
 
             {/* Sats flow chart */}
             <Card>
-                <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Cumulative Sats Locked</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Cumulative Sats Locked</h3>
                 {satsFlow.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
                         <AreaChart data={satsFlow}>
@@ -260,14 +257,14 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                         </AreaChart>
                     </ResponsiveContainer>
                 ) : (
-                    <p className="text-[#555] text-sm text-center py-10">No data</p>
+                    <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                 )}
             </Card>
 
             {/* Pies row */}
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">YES / NO Allocation</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">YES / NO Allocation</h3>
                     {allocationData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
@@ -285,7 +282,7 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                                     ))}
                                 </Pie>
                                 <Legend
-                                    formatter={(value: string) => <span className="text-[#8888a0] text-xs">{value}</span>}
+                                    formatter={(value: string) => <span className="text-[var(--color-text-secondary)] text-xs">{value}</span>}
                                 />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#1a1a2a', border: '1px solid #2a2a3a', borderRadius: 8, fontSize: 12 }}
@@ -294,12 +291,12 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                             </PieChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
 
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Locked vs Settled</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Locked vs Settled</h3>
                     {statusAllocation.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
@@ -317,7 +314,7 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                                     ))}
                                 </Pie>
                                 <Legend
-                                    formatter={(value: string) => <span className="text-[#8888a0] text-xs">{value}</span>}
+                                    formatter={(value: string) => <span className="text-[var(--color-text-secondary)] text-xs">{value}</span>}
                                 />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#1a1a2a', border: '1px solid #2a2a3a', borderRadius: 8, fontSize: 12 }}
@@ -326,7 +323,7 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                             </PieChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
             </div>
@@ -334,7 +331,7 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
             {/* Per-market bar + treemap */}
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Sats per Market</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Sats per Market</h3>
                     {perMarketSats.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart data={perMarketSats}>
@@ -346,12 +343,12 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                             </BarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
 
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Pool Size Map</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Pool Size Map</h3>
                     {treemapData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={220}>
                             <Treemap
@@ -362,7 +359,7 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                             />
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
             </div>
@@ -370,13 +367,13 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
             {/* Coin breakdown */}
             {coinBreakdown.length > 0 && (
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
                         Volume by Coin
                     </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="text-[#555] text-xs uppercase tracking-wider border-b border-[#2a2a3a]">
+                                <tr className="text-[var(--color-text-muted)] text-xs uppercase tracking-wider border-b border-[var(--color-border)]">
                                     <th className="text-left py-2 pr-3">Coin</th>
                                     <th className="text-right py-2 pr-3">Markets</th>
                                     <th className="text-right py-2 pr-3">Total Pool</th>
@@ -386,12 +383,12 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                             </thead>
                             <tbody>
                                 {coinBreakdown.map((row) => (
-                                    <tr key={row.coin} className="border-b border-[#2a2a3a]/50">
+                                    <tr key={row.coin} className="border-b border-[var(--color-border)]/50">
                                         <td className="py-2.5 pr-3">
-                                            <span className="text-[#f7931a] font-semibold">{row.coin}</span>
+                                            <span className="text-[var(--color-btc-orange)] font-semibold">{row.coin}</span>
                                         </td>
-                                        <td className="py-2.5 pr-3 text-right text-[#e4e4ec]">{row.markets}</td>
-                                        <td className="py-2.5 pr-3 text-right text-[#e4e4ec]">{formatSats(row.totalPool)}</td>
+                                        <td className="py-2.5 pr-3 text-right text-[var(--color-text-primary)]">{row.markets}</td>
+                                        <td className="py-2.5 pr-3 text-right text-[var(--color-text-primary)]">{formatSats(row.totalPool)}</td>
                                         <td className="py-2.5 pr-3 text-right text-green-400">{formatSats(row.yesPool)}</td>
                                         <td className="py-2.5 text-right text-red-400">{formatSats(row.noPool)}</td>
                                     </tr>
@@ -404,13 +401,13 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
 
             {/* Concentration table */}
             <Card>
-                <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
                     Sats Concentration
                 </h3>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="text-[#555] text-xs uppercase tracking-wider border-b border-[#2a2a3a]">
+                            <tr className="text-[var(--color-text-muted)] text-xs uppercase tracking-wider border-b border-[var(--color-border)]">
                                 <th className="text-left py-2 pr-3">Market</th>
                                 <th className="text-right py-2 pr-3">Pool</th>
                                 <th className="text-right py-2 pr-3">% of Total</th>
@@ -419,31 +416,31 @@ export function CoinsAnalytics({ data, search, blockRange, dateRange }: Props): 
                         </thead>
                         <tbody>
                             {concentrationData.map((row) => (
-                                <tr key={row.id.toString()} className="border-b border-[#2a2a3a]/50">
+                                <tr key={row.id.toString()} className="border-b border-[var(--color-border)]/50">
                                     <td className="py-2.5 pr-3">
-                                        <span className="text-[#f7931a] font-medium">#{row.id.toString()}</span>
-                                        <span className="text-[#8888a0] ml-2 text-xs">{row.question}</span>
+                                        <span className="text-[var(--color-btc-orange)] font-medium">#{row.id.toString()}</span>
+                                        <span className="text-[var(--color-text-secondary)] ml-2 text-xs">{row.question}</span>
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-[#e4e4ec]">
+                                    <td className="py-2.5 pr-3 text-right text-[var(--color-text-primary)]">
                                         {formatSats(row.totalPool)}
                                     </td>
-                                    <td className="py-2.5 pr-3 text-right text-[#8888a0]">{row.pct}%</td>
+                                    <td className="py-2.5 pr-3 text-right text-[var(--color-text-secondary)]">{row.pct}%</td>
                                     <td className="py-2.5 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <div className="w-16 h-1.5 bg-[#2a2a3a] rounded-full overflow-hidden">
+                                            <div className="w-16 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-[#f7931a] rounded-full"
+                                                    className="h-full bg-[var(--color-btc-orange)] rounded-full"
                                                     style={{ width: `${row.cumPct}%` }}
                                                 />
                                             </div>
-                                            <span className="text-[#e4e4ec] text-xs w-10 text-right">{row.cumPct}%</span>
+                                            <span className="text-[var(--color-text-primary)] text-xs w-10 text-right">{row.cumPct}%</span>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
                             {concentrationData.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="py-8 text-center text-[#555]">
+                                    <td colSpan={4} className="py-8 text-center text-[var(--color-text-muted)]">
                                         No data
                                     </td>
                                 </tr>

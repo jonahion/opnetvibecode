@@ -4,6 +4,7 @@
 create table if not exists market_questions (
     market_id bigint primary key,
     question text not null,
+    category text default 'price',
     coin text,
     target_price numeric,
     deadline timestamptz,
@@ -52,6 +53,7 @@ create policy "Anyone can update analytics cache"
 
 -- Migration: add structured metadata columns to existing market_questions table
 -- Run this if the table already exists without these columns:
+-- ALTER TABLE market_questions ADD COLUMN IF NOT EXISTS category text DEFAULT 'price';
 -- ALTER TABLE market_questions ADD COLUMN IF NOT EXISTS coin text;
 -- ALTER TABLE market_questions ADD COLUMN IF NOT EXISTS target_price numeric;
 -- ALTER TABLE market_questions ADD COLUMN IF NOT EXISTS deadline timestamptz;

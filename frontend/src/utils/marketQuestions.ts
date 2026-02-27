@@ -1,8 +1,9 @@
 import { supabase } from '../services/supabase';
-import { MarketMetadata } from '../types';
+import { MarketMetadata, MarketCategory } from '../types';
 
 interface MarketQuestionEntry {
     question: string;
+    category?: MarketCategory;
     coin?: string;
     targetPrice?: number;
     deadline?: string;
@@ -20,7 +21,7 @@ export async function bootMarketQuestions(): Promise<void> {
         // Try with metadata columns first; fall back to question-only if columns don't exist yet
         const { data, error } = await supabase
             .from('market_questions')
-            .select('market_id, question, coin, target_price, deadline');
+            .select('market_id, question, category, coin, target_price, deadline');
         if (error && error.code === '42703') {
             // Columns don't exist yet — load question-only
             const { data: fallback } = await supabase
@@ -37,6 +38,7 @@ export async function bootMarketQuestions(): Promise<void> {
             for (const row of data) {
                 cache.set(String(row.market_id), {
                     question: row.question as string,
+                    category: (row.category as MarketCategory) || undefined,
                     coin: (row.coin as string) || undefined,
                     targetPrice: (row.target_price as number) || undefined,
                     deadline: (row.deadline as string) || undefined,
@@ -56,6 +58,7 @@ export async function saveMarketQuestion(
     const key = marketId.toString();
     cache.set(key, {
         question,
+        category: metadata?.category,
         coin: metadata?.coin,
         targetPrice: metadata?.targetPrice,
         deadline: metadata?.deadline,
@@ -68,6 +71,7 @@ export async function saveMarketQuestion(
             question,
         };
         if (metadata) {
+            row.category = metadata.category;
             row.coin = metadata.coin;
             row.target_price = metadata.targetPrice;
             row.deadline = metadata.deadline;
@@ -96,10 +100,11 @@ export function getMarketTitle(marketId: bigint, fallback?: string): string {
 
 export function getMarketMetadata(marketId: bigint): MarketMetadata | null {
     const entry = cache.get(marketId.toString());
-    if (!entry?.coin) return null;
+    if (!entry?.category) return null;
     return {
+        category: entry.category,
         coin: entry.coin,
-        targetPrice: entry.targetPrice ?? 0,
+        targetPrice: entry.targetPrice,
         deadline: entry.deadline ?? '',
     };
 }
@@ -107,10 +112,11 @@ export function getMarketMetadata(marketId: bigint): MarketMetadata | null {
 export function getAllMarketMetadata(): Map<string, MarketMetadata> {
     const result = new Map<string, MarketMetadata>();
     for (const [id, entry] of cache) {
-        if (entry.coin) {
+        if (entry.category) {
             result.set(id, {
+                category: entry.category,
                 coin: entry.coin,
-                targetPrice: entry.targetPrice ?? 0,
+                targetPrice: entry.targetPrice,
                 deadline: entry.deadline ?? '',
             });
         }

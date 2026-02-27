@@ -92,4 +92,12 @@ export const PREDICTION_MARKET_ABI: BitcoinInterfaceAbi = [
             { name: 'owner', type: ABIDataTypes.UINT256 },
         ],
     },
+    {
+        type: BitcoinAbiTypes.Function,
+        name: 'getCallerAddressView',
+        inputs: [],
+        outputs: [
+            { name: 'callerAddress', type: ABIDataTypes.UINT256 },
+        ],
+    },
 ];

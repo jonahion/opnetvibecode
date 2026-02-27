@@ -89,6 +89,7 @@ export class PredictionMarket extends OP_NET {
     private readonly getUserPositionSelector: Selector = encodeSelector('getUserPosition(uint256,address)');
     private readonly getMarketCountSelector: Selector = encodeSelector('getMarketCount()');
     private readonly getOwnerSelector: Selector = encodeSelector('getOwner()');
+    private readonly getCallerAddressSelector: Selector = encodeSelector('getCallerAddress()');
 
     // Global storage
     private readonly marketCountPointer: u16 = Blockchain.nextPointer;
@@ -139,6 +140,8 @@ export class PredictionMarket extends OP_NET {
                 return this.getMarketCountView();
             case this.getOwnerSelector:
                 return this.getOwnerView();
+            case this.getCallerAddressSelector:
+                return this.getCallerAddressView();
             default:
                 return super.callMethod(calldata);
         }
@@ -154,7 +157,7 @@ export class PredictionMarket extends OP_NET {
     public createMarket(calldata: Calldata): BytesWriter {
         const question: string = calldata.readStringWithLength();
         const endBlock: u64 = calldata.readU64();
-        const oracle: Address = calldata.readAddress();
+        const oracleParam: Address = calldata.readAddress();
 
         if (endBlock <= Blockchain.block.number) {
             throw new Revert('End block must be in the future');
@@ -175,9 +178,17 @@ export class PredictionMarket extends OP_NET {
         const creator: Address = Blockchain.tx.sender;
         const marketIdBytes: Uint8Array = this.toSubPointer(marketId);
 
-        this.getMarketStore(this.marketCreatorPointer, marketIdBytes).value = u256.fromUint8ArrayBE(creator);
+        // Use tx.sender as oracle if the passed oracle matches the sender's
+        // WalletConnect address (which differs from tx.sender). To handle this,
+        // always use tx.sender when oracle param equals the default.
+        // If the oracle param is all zeros or matches tx.sender, use tx.sender.
+        const oracleU256: u256 = u256.fromUint8ArrayBE(oracleParam);
+        const senderU256: u256 = u256.fromUint8ArrayBE(creator);
+        const effectiveOracle: u256 = u256.eq(oracleU256, u256.Zero) ? senderU256 : oracleU256;
+
+        this.getMarketStore(this.marketCreatorPointer, marketIdBytes).value = senderU256;
         this.setMarketEndBlock(marketIdBytes, endBlock);
-        this.getMarketStore(this.marketOraclePointer, marketIdBytes).value = u256.fromUint8ArrayBE(oracle);
+        this.getMarketStore(this.marketOraclePointer, marketIdBytes).value = effectiveOracle;
         this.getMarketStore(this.marketStatusPointer, marketIdBytes).value = STATUS_OPEN;
         this.getMarketStore(this.marketOutcomePointer, marketIdBytes).value = u256.Zero;
         this.getMarketStore(this.marketYesPoolPointer, marketIdBytes).value = u256.Zero;
@@ -406,6 +417,14 @@ export class PredictionMarket extends OP_NET {
     public getOwnerView(_calldata: Calldata): BytesWriter {
         const writer: BytesWriter = new BytesWriter(32);
         writer.writeU256(this._ownerAddress.value);
+        return writer;
+    }
+
+    @method()
+    @returns({ name: 'callerAddress', type: ABIDataTypes.UINT256 })
+    public getCallerAddressView(_calldata: Calldata): BytesWriter {
+        const writer: BytesWriter = new BytesWriter(32);
+        writer.writeU256(u256.fromUint8ArrayBE(Blockchain.tx.sender));
         return writer;
     }
 

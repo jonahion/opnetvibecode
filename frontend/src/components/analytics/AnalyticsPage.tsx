@@ -47,28 +47,28 @@ export function AnalyticsPage(): React.JSX.Element {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#e4e4ec]">Analytics</h1>
-                    <p className="text-[#8888a0] mt-1">On-chain prediction market insights</p>
+                    <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Analytics</h1>
+                    <p className="text-[var(--color-text-secondary)] mt-1">On-chain prediction market insights</p>
                 </div>
                 <button
                     onClick={() => void refresh(true)}
                     disabled={loading}
-                    className="bg-[#1a1a2a] border border-[#2a2a3a] hover:border-[#f7931a] text-[#e4e4ec] px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50 cursor-pointer"
+                    className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] hover:border-[var(--color-btc-orange)] text-[var(--color-text-primary)] px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50 cursor-pointer"
                 >
                     {loading ? 'Loading...' : 'Refresh'}
                 </button>
             </div>
 
             {/* Sub-tabs */}
-            <div className="flex gap-1 bg-[#111118] border border-[#2a2a3a] rounded-xl p-1 mb-6 overflow-x-auto">
+            <div className="flex gap-1 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl p-1 mb-6 overflow-x-auto">
                 {TABS.map((tab) => (
                     <button
                         key={tab.key}
                         onClick={() => setTab(tab.key)}
                         className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                             activeTab === tab.key
-                                ? 'bg-[#f7931a] text-black'
-                                : 'text-[#8888a0] hover:text-[#e4e4ec] hover:bg-[#1a1a24]'
+                                ? 'bg-[var(--color-btc-orange)] text-black'
+                                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card-hover)]'
                         }`}
                     >
                         {tab.label}
@@ -83,46 +83,46 @@ export function AnalyticsPage(): React.JSX.Element {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search markets, wallets, oracles..."
-                    className="flex-1 min-w-[200px] bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-2.5 text-sm text-[#e4e4ec] placeholder-[#555] focus:border-[#f7931a] focus:outline-none transition-colors"
+                    className="flex-1 min-w-[200px] bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors"
                 />
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#555]">Block</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">Block</span>
                     <input
                         type="number"
                         value={blockRange.from}
                         onChange={(e) => setBlockRange((prev) => ({ ...prev, from: e.target.value }))}
                         placeholder="From"
-                        className="w-24 bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 py-2.5 text-sm text-[#e4e4ec] placeholder-[#555] focus:border-[#f7931a] focus:outline-none transition-colors"
+                        className="w-24 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors"
                     />
-                    <span className="text-[#555]">-</span>
+                    <span className="text-[var(--color-text-muted)]">-</span>
                     <input
                         type="number"
                         value={blockRange.to}
                         onChange={(e) => setBlockRange((prev) => ({ ...prev, to: e.target.value }))}
                         placeholder="To"
-                        className="w-24 bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 py-2.5 text-sm text-[#e4e4ec] placeholder-[#555] focus:border-[#f7931a] focus:outline-none transition-colors"
+                        className="w-24 bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors"
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#555]">Date</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">Date</span>
                     <input
                         type="date"
                         value={dateRange.from}
                         onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
-                        className="bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 py-2 text-sm text-[#e4e4ec] focus:border-[#f7931a] focus:outline-none transition-colors [color-scheme:dark]"
+                        className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors [color-scheme:dark]"
                     />
-                    <span className="text-[#555]">-</span>
+                    <span className="text-[var(--color-text-muted)]">-</span>
                     <input
                         type="date"
                         value={dateRange.to}
                         onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
-                        className="bg-[#111118] border border-[#2a2a3a] rounded-lg px-3 py-2 text-sm text-[#e4e4ec] focus:border-[#f7931a] focus:outline-none transition-colors [color-scheme:dark]"
+                        className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-btc-orange)] focus:outline-none transition-colors [color-scheme:dark]"
                     />
                 </div>
                 {hasFilters && (
                     <button
                         onClick={clearFilters}
-                        className="text-xs text-[#8888a0] hover:text-[#f7931a] transition-colors cursor-pointer px-2"
+                        className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-btc-orange)] transition-colors cursor-pointer px-2"
                     >
                         Clear
                     </button>
@@ -137,7 +137,7 @@ export function AnalyticsPage(): React.JSX.Element {
 
             {loading && !data && (
                 <div className="flex items-center justify-center py-20">
-                    <div className="animate-pulse text-[#f7931a] text-lg">Loading analytics...</div>
+                    <div className="animate-pulse text-[var(--color-btc-orange)] text-lg">Loading analytics...</div>
                 </div>
             )}
 
@@ -162,8 +162,8 @@ export function AnalyticsPage(): React.JSX.Element {
 
             {!loading && !data && !error && (
                 <div className="text-center py-20">
-                    <p className="text-[#8888a0]">No data available yet</p>
-                    <p className="text-[#555] text-sm mt-1">Markets will appear here once created on-chain</p>
+                    <p className="text-[var(--color-text-secondary)]">No data available yet</p>
+                    <p className="text-[var(--color-text-muted)] text-sm mt-1">Markets will appear here once created on-chain</p>
                 </div>
             )}
         </div>

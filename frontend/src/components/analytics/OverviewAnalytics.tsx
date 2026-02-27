@@ -24,8 +24,8 @@ function formatSats(sats: bigint): string {
 function ChartTooltip({ active, payload, label }: any): React.JSX.Element | null {
     if (!active || !payload?.length) return null;
     return (
-        <div className="bg-[#1a1a2a] border border-[#2a2a3a] rounded-lg px-3 py-2 text-xs">
-            <p className="text-[#e4e4ec] font-medium mb-1">{label}</p>
+        <div className="bg-[var(--color-bg-card-hover)] border border-[var(--color-border)] rounded-lg px-3 py-2 text-xs">
+            <p className="text-[var(--color-text-primary)] font-medium mb-1">{label}</p>
             {payload.map((p: { name: string; value: number; color: string }, i: number) => (
                 <p key={i} style={{ color: p.color }}>
                     {p.name}: {p.value.toLocaleString()} sats
@@ -90,41 +90,41 @@ export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props
     return (
         <div className="space-y-6">
             {/* Hero TVL */}
-            <div className="bg-gradient-to-br from-[#f7931a]/10 to-[#111118] border border-[#f7931a]/30 rounded-2xl p-6">
-                <p className="text-xs uppercase tracking-wider text-[#f7931a] mb-2">Total Value Locked</p>
-                <p className="text-4xl font-bold text-[#f7931a]">{formatSats(tvl)}</p>
-                <p className="text-sm text-[#8888a0] mt-2">
+            <div className="bg-gradient-to-br from-[var(--color-btc-orange)]/10 to-[var(--color-bg-card)] border border-[var(--color-btc-orange)]/30 rounded-2xl p-6">
+                <p className="text-xs uppercase tracking-wider text-[var(--color-btc-orange)] mb-2">Total Value Locked</p>
+                <p className="text-4xl font-bold text-[var(--color-btc-orange)]">{formatSats(tvl)}</p>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-2">
                     Across {filtered.length} market{filtered.length !== 1 ? 's' : ''}
                 </p>
             </div>
 
             {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Markets</p>
-                    <p className="text-xl font-bold text-[#f7931a]">{filtered.length}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Markets</p>
+                    <p className="text-xl font-bold text-[var(--color-btc-orange)]">{filtered.length}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">TVL in Open</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">TVL in Open</p>
                     <p className="text-xl font-bold text-green-400">{formatSats(tvlOpen)}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">TVL Resolved</p>
-                    <p className="text-xl font-bold text-[#8888a0]">{formatSats(tvlResolved)}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">TVL Resolved</p>
+                    <p className="text-xl font-bold text-[var(--color-text-secondary)]">{formatSats(tvlResolved)}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Oracles</p>
-                    <p className="text-xl font-bold text-[#e4e4ec]">{uniqueOracles}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Oracles</p>
+                    <p className="text-xl font-bold text-[var(--color-text-primary)]">{uniqueOracles}</p>
                 </div>
-                <div className="bg-[#111118] border border-[#2a2a3a] rounded-xl px-4 py-3">
-                    <p className="text-xs uppercase tracking-wider text-[#555] mb-1">Creators</p>
-                    <p className="text-xl font-bold text-[#e4e4ec]">{uniqueCreators}</p>
+                <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)] rounded-xl px-4 py-3">
+                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-1">Creators</p>
+                    <p className="text-xl font-bold text-[var(--color-text-primary)]">{uniqueCreators}</p>
                 </div>
             </div>
 
             {/* TVL over time */}
             <Card>
-                <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">TVL Growth</h3>
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">TVL Growth</h3>
                 {tvlOverTime.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={tvlOverTime}>
@@ -141,14 +141,14 @@ export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props
                         </AreaChart>
                     </ResponsiveContainer>
                 ) : (
-                    <p className="text-[#555] text-sm text-center py-10">No data to display</p>
+                    <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data to display</p>
                 )}
             </Card>
 
             {/* TVL breakdown + per-market */}
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">Cumulative YES vs NO Locked</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Cumulative YES vs NO Locked</h3>
                     {tvlBreakdown.length > 0 ? (
                         <ResponsiveContainer width="100%" height={250}>
                             <AreaChart data={tvlBreakdown}>
@@ -170,12 +170,12 @@ export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props
                             </AreaChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
 
                 <Card>
-                    <h3 className="text-sm font-semibold text-[#e4e4ec] mb-4">TVL per Market</h3>
+                    <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">TVL per Market</h3>
                     {perMarketTvl.length > 0 ? (
                         <ResponsiveContainer width="100%" height={250}>
                             <BarChart data={perMarketTvl}>
@@ -187,7 +187,7 @@ export function OverviewAnalytics({ data, search, blockRange, dateRange }: Props
                             </BarChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-[#555] text-sm text-center py-10">No data</p>
+                        <p className="text-[var(--color-text-muted)] text-sm text-center py-10">No data</p>
                     )}
                 </Card>
             </div>

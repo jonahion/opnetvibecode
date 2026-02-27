@@ -189,6 +189,19 @@
                     "type": "UINT256"
                 }
             ]
+        },
+        {
+            "name": "getCallerAddressView",
+            "type": "Function",
+            "payable": false,
+            "onlyOwner": false,
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "callerAddress",
+                    "type": "UINT256"
+                }
+            ]
         }
     ],
     "events": [

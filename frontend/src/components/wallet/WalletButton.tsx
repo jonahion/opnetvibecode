@@ -19,7 +19,7 @@ export function WalletButton(): React.JSX.Element {
     if (isConnected && addressStr) {
         return (
             <div className="flex items-center gap-3">
-                <span className="text-sm text-[#8888a0] bg-[#1a1a24] px-3 py-1.5 rounded-lg border border-[#2a2a3a]">
+                <span className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-card-hover)] px-3 py-1.5 rounded-lg border border-[var(--color-border)]">
                     {formatAddress(addressStr)}
                 </span>
                 <Button variant="ghost" size="sm" onClick={disconnect}>
