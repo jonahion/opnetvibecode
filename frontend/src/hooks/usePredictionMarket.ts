@@ -423,7 +423,27 @@ export function usePredictionMarket(): {
         setError(null);
         try {
             if (!address) throw new Error('Wallet not connected');
-            const contract = createContract(contractAddress, network);
+
+            // Build a full Address with legacy public key so the simulation
+            // knows the real tx.sender (needed for bet ownership check).
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const opwallet = (window as any).opnet;
+            let sender: Address | undefined;
+            if (opwallet) {
+                try {
+                    const [pubKey, mldsaPubKey] = await Promise.all([
+                        opwallet.getPublicKey() as Promise<string>,
+                        opwallet.getMLDSAPublicKey() as Promise<string>,
+                    ]);
+                    if (mldsaPubKey && pubKey) {
+                        sender = Address.fromString(mldsaPubKey, pubKey);
+                    }
+                } catch {
+                    // best-effort; proceed without sender
+                }
+            }
+
+            const contract = createContract(contractAddress, network, sender);
             const sim = await contract.claimWinnings(marketId);
             if (sim.revert) throw new Error(`Claim failed: ${String(sim.revert)}`);
 

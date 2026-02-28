@@ -327,44 +327,75 @@ export function MarketDetail(): React.JSX.Element {
                 </Card>
             )}
 
-            {position && (position.yesBet > 0n || position.noBet > 0n) && (
-                <Card>
-                    <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Your Position</h2>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span className="block text-xs uppercase tracking-wider text-[var(--color-text-secondary)] mb-1">Your YES Bet</span>
-                            <span className="text-green-400 font-semibold">{formatSats(position.yesBet)}</span>
-                        </div>
-                        <div>
-                            <span className="block text-xs uppercase tracking-wider text-[var(--color-text-secondary)] mb-1">Your NO Bet</span>
-                            <span className="text-red-400 font-semibold">{formatSats(position.noBet)}</span>
-                        </div>
-                    </div>
+            {position && (position.yesBet > 0n || position.noBet > 0n) && (() => {
+                // Calculate winnings when market is resolved
+                const wonYes = isResolved && market.outcome === MarketOutcome.YES && position.yesBet > 0n;
+                const wonNo = isResolved && market.outcome === MarketOutcome.NO && position.noBet > 0n;
+                const isWinner = wonYes || wonNo;
+                const userWinningBet = wonYes ? position.yesBet : wonNo ? position.noBet : 0n;
+                const winningPool = wonYes ? market.yesPool : wonNo ? market.noPool : 0n;
+                const winnings = winningPool > 0n ? (userWinningBet * totalPool) / winningPool : 0n;
+                const profit = winnings - userWinningBet;
 
-                    {isResolved && !position.claimed && (
-                        <>
-                            <Button
-                                variant="primary"
-                                size="lg"
-                                className="w-full mt-4"
-                                onClick={handleClaim}
-                                disabled={loading}
-                            >
-                                {loading ? 'Claiming...' : 'Claim Winnings'}
-                            </Button>
-                            {error && errorSource === 'claim' && (
-                                <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
-                                    {error}
+                return (
+                    <Card>
+                        <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Your Position</h2>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span className="block text-xs uppercase tracking-wider text-[var(--color-text-secondary)] mb-1">Your YES Bet</span>
+                                <span className="text-green-400 font-semibold">{formatSats(position.yesBet)}</span>
+                            </div>
+                            <div>
+                                <span className="block text-xs uppercase tracking-wider text-[var(--color-text-secondary)] mb-1">Your NO Bet</span>
+                                <span className="text-red-400 font-semibold">{formatSats(position.noBet)}</span>
+                            </div>
+                        </div>
+
+                        {isResolved && isWinner && !position.claimed && (
+                            <>
+                                <div className="mt-6 mb-4 text-center py-6 rounded-2xl bg-[var(--color-btc-orange)]/10 border border-[var(--color-btc-orange)]/30">
+                                    <p className="text-xs uppercase tracking-wider text-[var(--color-text-secondary)] mb-2">Your Winnings</p>
+                                    <p className="text-3xl font-black text-[var(--color-btc-orange)]">{formatSats(winnings)}</p>
+                                    {profit > 0n && (
+                                        <p className="text-sm text-green-400 mt-1">+{formatSats(profit)} profit</p>
+                                    )}
                                 </div>
-                            )}
-                        </>
-                    )}
+                                <Button
+                                    variant="primary"
+                                    size="lg"
+                                    className="w-full"
+                                    onClick={handleClaim}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Claiming...' : `Claim ${formatSats(winnings)}`}
+                                </Button>
+                                {error && errorSource === 'claim' && (
+                                    <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
+                                        {error}
+                                    </div>
+                                )}
+                            </>
+                        )}
 
-                    {position.claimed && (
-                        <p className="text-center mt-4 text-[var(--color-text-secondary)]">Winnings already claimed</p>
-                    )}
-                </Card>
-            )}
+                        {isResolved && !isWinner && !position.claimed && (
+                            <div className="mt-4 text-center py-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                                <p className="text-sm text-red-400 font-medium">
+                                    Market resolved {market.outcome === MarketOutcome.YES ? 'YES' : 'NO'} — your bet was on the losing side.
+                                </p>
+                            </div>
+                        )}
+
+                        {position.claimed && (
+                            <div className="mt-4 text-center py-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                                <p className="text-sm text-green-400 font-medium">Winnings claimed</p>
+                                {winnings > 0n && (
+                                    <p className="text-lg font-bold text-green-400 mt-1">{formatSats(winnings)}</p>
+                                )}
+                            </div>
+                        )}
+                    </Card>
+                );
+            })()}
 
             {isOpen && (
                 <Card>
