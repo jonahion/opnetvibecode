@@ -166,9 +166,11 @@ export function MarketDetail(): React.JSX.Element {
     const walletHex = normalize(address).replace(/^0+/, '');
     const isOracle = (callerHex !== '' && oracleHex === callerHex) || (walletHex !== '' && oracleHex === walletHex);
     const deadlineReached = currentBlock !== null && currentBlock >= market.endBlock;
-    const pendingBets = pendingTxs.filter((tx) => tx.txType !== 'resolveMarket');
+    const pendingBets = pendingTxs.filter((tx) => tx.txType !== 'resolveMarket' && tx.txType !== 'claimWinnings');
     const pendingResolutions = pendingTxs.filter((tx) => tx.txType === 'resolveMarket');
+    const pendingClaims = pendingTxs.filter((tx) => tx.txType === 'claimWinnings');
     const hasPendingResolution = pendingResolutions.length > 0;
+    const hasPendingClaim = pendingClaims.length > 0;
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
@@ -360,14 +362,36 @@ export function MarketDetail(): React.JSX.Element {
                                         <p className="text-sm text-green-400 mt-1">+{formatSats(profit)} profit</p>
                                     )}
                                 </div>
+                                {hasPendingClaim && (
+                                    <div className="mb-4 space-y-2">
+                                        {pendingClaims.map((tx) => (
+                                            <div key={tx.txId} className="bg-[var(--color-btc-orange)]/5 border border-[var(--color-btc-orange)]/20 rounded-lg px-4 py-3">
+                                                <p className="text-sm font-medium text-[var(--color-btc-orange)] mb-2">
+                                                    Pending Claim
+                                                </p>
+                                                <div className="flex items-center justify-between text-sm mb-1">
+                                                    <span className="text-[var(--color-text-muted)]">TxID</span>
+                                                    <span className="font-mono text-[var(--color-text-secondary)]">{truncateId(tx.txId)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-[var(--color-text-muted)]">Seen</span>
+                                                    <span className="text-[var(--color-text-secondary)]">{timeAgo(tx.firstSeen)}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                            Your claim is being processed. Waiting for block confirmation (~10 min).
+                                        </p>
+                                    </div>
+                                )}
                                 <Button
                                     variant="primary"
                                     size="lg"
                                     className="w-full"
                                     onClick={handleClaim}
-                                    disabled={loading}
+                                    disabled={loading || hasPendingClaim}
                                 >
-                                    {loading ? 'Claiming...' : `Claim ${formatSats(winnings)}`}
+                                    {loading ? 'Claiming...' : hasPendingClaim ? 'Claim Pending...' : `Claim ${formatSats(winnings)}`}
                                 </Button>
                                 {error && errorSource === 'claim' && (
                                     <div className="mt-3 text-red-400 text-sm bg-red-400/10 px-4 py-3 rounded-lg">
