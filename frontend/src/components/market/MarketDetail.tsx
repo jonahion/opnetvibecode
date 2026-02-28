@@ -166,6 +166,9 @@ export function MarketDetail(): React.JSX.Element {
     const walletHex = normalize(address).replace(/^0+/, '');
     const isOracle = (callerHex !== '' && oracleHex === callerHex) || (walletHex !== '' && oracleHex === walletHex);
     const deadlineReached = currentBlock !== null && currentBlock >= market.endBlock;
+    const pendingBets = pendingTxs.filter((tx) => tx.txType !== 'resolveMarket');
+    const pendingResolutions = pendingTxs.filter((tx) => tx.txType === 'resolveMarket');
+    const hasPendingResolution = pendingResolutions.length > 0;
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
@@ -281,21 +284,21 @@ export function MarketDetail(): React.JSX.Element {
                 </Card>
             )}
 
-            {pendingTxs.length > 0 && (
+            {pendingBets.length > 0 && (
                 <Card className="relative overflow-hidden">
                     <div className="absolute inset-0 bg-[var(--color-btc-orange)]/5 animate-pulse pointer-events-none" />
                     <div className="relative">
                         <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-3 flex items-center gap-2">
                             Pending Bets
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full text-[var(--color-btc-orange)] bg-[var(--color-btc-orange)]/10 animate-pulse">
-                                {pendingTxs.length}
+                                {pendingBets.length}
                             </span>
                         </h2>
                         <p className="text-xs text-[var(--color-text-muted)] mb-4">
                             Unconfirmed bets on this market. They will be reflected after the next block (~10 min).
                         </p>
                         <div className="space-y-3">
-                            {pendingTxs.map((tx) => (
+                            {pendingBets.map((tx) => (
                                 <div
                                     key={tx.txId}
                                     className="bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded-lg px-4 py-3"
@@ -385,10 +388,42 @@ export function MarketDetail(): React.JSX.Element {
                                         </span>
                                     )}
                                 </p>
+                            ) : hasPendingResolution ? (
+                                <p className="text-sm text-[var(--color-btc-orange)] mb-4">
+                                    A resolution transaction is pending. Waiting for block confirmation (~10 min).
+                                </p>
                             ) : (
                                 <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                                     The deadline has passed. You can now resolve this market.
                                 </p>
+                            )}
+                            {hasPendingResolution && (
+                                <div className="space-y-3 mb-4">
+                                    {pendingResolutions.map((tx) => (
+                                        <div
+                                            key={tx.txId}
+                                            className="bg-[var(--color-btc-orange)]/5 border border-[var(--color-btc-orange)]/20 rounded-lg px-4 py-3"
+                                        >
+                                            <p className="text-sm font-medium text-[var(--color-btc-orange)] mb-2">
+                                                Pending Resolution
+                                            </p>
+                                            <div className="flex items-center justify-between text-sm mb-1">
+                                                <span className="text-[var(--color-text-muted)]">TxID</span>
+                                                <span className="font-mono text-[var(--color-text-secondary)]">{truncateId(tx.txId)}</span>
+                                            </div>
+                                            {tx.from && (
+                                                <div className="flex items-center justify-between text-sm mb-1">
+                                                    <span className="text-[var(--color-text-muted)]">From</span>
+                                                    <span className="font-mono text-[var(--color-text-secondary)]">{truncateId(tx.from)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-[var(--color-text-muted)]">Seen</span>
+                                                <span className="text-[var(--color-text-secondary)]">{timeAgo(tx.firstSeen)}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                             <div className="flex gap-4">
                                 <Button
@@ -396,7 +431,7 @@ export function MarketDetail(): React.JSX.Element {
                                     size="md"
                                     className="flex-1"
                                     onClick={() => handleResolve(MarketOutcome.YES)}
-                                    disabled={loading || !deadlineReached}
+                                    disabled={loading || !deadlineReached || hasPendingResolution}
                                 >
                                     Resolve YES
                                 </Button>
@@ -405,7 +440,7 @@ export function MarketDetail(): React.JSX.Element {
                                     size="md"
                                     className="flex-1"
                                     onClick={() => handleResolve(MarketOutcome.NO)}
-                                    disabled={loading || !deadlineReached}
+                                    disabled={loading || !deadlineReached || hasPendingResolution}
                                 >
                                     Resolve NO
                                 </Button>
@@ -430,10 +465,23 @@ export function MarketDetail(): React.JSX.Element {
                                     Deadline: block #{market.endBlock.toLocaleString()} (current: #{currentBlock.toLocaleString()})
                                 </p>
                             )}
-                            {deadlineReached && (
+                            {deadlineReached && !hasPendingResolution && (
                                 <p className="mt-3 text-[var(--color-btc-orange)] text-xs">
                                     Deadline reached. Waiting for oracle to resolve.
                                 </p>
+                            )}
+                            {hasPendingResolution && (
+                                <div className="mt-3 space-y-2">
+                                    {pendingResolutions.map((tx) => (
+                                        <div key={tx.txId} className="bg-[var(--color-btc-orange)]/5 border border-[var(--color-btc-orange)]/20 rounded-lg px-3 py-2">
+                                            <p className="text-xs font-medium text-[var(--color-btc-orange)] mb-1">Pending Resolution</p>
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-[var(--color-text-muted)]">TxID</span>
+                                                <span className="font-mono text-[var(--color-text-secondary)]">{truncateId(tx.txId)}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     )}
